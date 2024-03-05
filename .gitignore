@@ -1,0 +1,22 @@
+# Ignore node modules
+node_modules/
+
+# Ignore environment variables
+.env
+
+# Ignore system files
+.DS_Store
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore log files
+npm-debug.log
+yarn-error.log
+
+# Ignore build directories
+dist/
+build/
+
+# Ignore test files
+test.js
