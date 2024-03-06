@@ -1,11 +1,11 @@
-// src/models/Comment.js
+// src/models/Post.js
 
 // Import the required modules
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/connection");
 
-// Define Comment model
-const Comment = sequelize.define("Comment", {
+// Define Post model
+const Post = sequelize.define("Post", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -17,5 +17,5 @@ const Comment = sequelize.define("Comment", {
   },
 });
 
-// Export Comment model
-module.exports = Comment;
+// Export Post model
+module.exports = Post;

@@ -1,10 +1,10 @@
-// src/models/User.js
+// src/models/Group.js
 
+// Import the required modules
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/connection");
 
-const User = require("./User");
-
+// Define Group model
 const Group = sequelize.define("Group", {
   id: {
     type: DataTypes.INTEGER,
@@ -26,7 +26,5 @@ const Group = sequelize.define("Group", {
   },
 });
 
-Group.belongsToMany(User, { through: GroupUser });
-Group.hasMany(Event);
-
+// Export Group model
 module.exports = Group;
