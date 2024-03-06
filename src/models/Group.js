@@ -1,33 +1,30 @@
-// src/models/User.js
+// src/models/Group.js
 
 // Import the required modules
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/connection");
 
-// Define User model
-const User = sequelize.define("User", {
+// Define Group model
+const Group = sequelize.define("Group", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
   },
-  username: {
+  name: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
+  description: {
+    type: DataTypes.TEXT,
   },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false,
+  tags: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
   },
-  profile_photo: {
+  privacy_settings: {
     type: DataTypes.STRING,
   },
 });
 
-// Export User model
-module.exports = User;
+// Export Group model
+module.exports = Group;

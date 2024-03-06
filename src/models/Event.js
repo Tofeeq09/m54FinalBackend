@@ -1,33 +1,35 @@
-// src/models/User.js
+// src/models/Event.js
 
 // Import the required modules
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db/connection");
 
-// Define User model
-const User = sequelize.define("User", {
+// Define Event model
+const Event = sequelize.define("Event", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
   },
-  username: {
+  name: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
+  description: {
+    type: DataTypes.TEXT,
   },
-  password: {
-    type: DataTypes.STRING,
+  date: {
+    type: DataTypes.DATEONLY,
     allowNull: false,
   },
-  profile_photo: {
+  time: {
+    type: DataTypes.TIME,
+    allowNull: false,
+  },
+  location: {
     type: DataTypes.STRING,
   },
 });
 
-// Export User model
-module.exports = User;
+// Export Event model
+module.exports = Event;
