@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const saltRounds = parseInt(process.env.SALT_ROUNDS);
 const { User } = require("../models");
+const { ValidationError, CustomError } = require("../utils/errorHandler");
 
 // Define the auth middleware
 const hashPassword = async (req, res, next) => {
@@ -12,8 +13,7 @@ const hashPassword = async (req, res, next) => {
     const { password } = req.body;
 
     if (!password) {
-      res.status(400).json({ success: false, message: "Password is required" });
-      return;
+      throw new ValidationError("Validation failed: password is required", "hashPassword");
     }
 
     const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -21,8 +21,11 @@ const hashPassword = async (req, res, next) => {
 
     next();
   } catch (error) {
-    res.status(500).json({ success: false, source: "hashPassword", error: error.message });
-    return;
+    if (error instanceof ValidationError) {
+      next(error);
+    }
+
+    next(new CustomError(error.message, 500, "hashPassword"));
   }
 };
 
