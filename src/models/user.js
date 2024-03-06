@@ -24,8 +24,12 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  profile_photo: {
+  avatar: {
     type: DataTypes.STRING,
+  },
+  online: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
 });
 

@@ -17,9 +17,10 @@ const signup = async (req, res, next) => {
       throw new ValidationError("Validation failed: Email already registered", "signup");
     }
 
-    const user = await User.create({ username, email, password });
+    const user = await User.create({ username, email, password, online: true });
+    const { email: userEmail, password: userPassword, ...rest } = user.dataValues;
 
-    res.status(201).json({ success: true, user });
+    res.status(201).json({ success: true, user: rest });
     return;
   } catch (error) {
     if (error instanceof ValidationError) {

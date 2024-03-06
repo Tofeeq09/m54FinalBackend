@@ -24,7 +24,7 @@ app.get("/health", (req, res) => {
 
 const syncDatabase = async () => {
   try {
-    await sequelize.sync({ force: true });
+    await sequelize.sync();
     console.log(
       `Database: ${sequelize.getDialect()}, Database Name: ${
         sequelize.config.database
