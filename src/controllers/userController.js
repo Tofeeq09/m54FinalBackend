@@ -6,7 +6,6 @@ const { Op } = require("sequelize");
 const { User } = require("../models");
 const { ValidationError, DatabaseError, JwtError, CustomError } = require("../utils/errorHandler");
 
-// Define the user controller
 const signup = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
@@ -18,15 +17,29 @@ const signup = async (req, res, next) => {
 
     let user;
     try {
-      user = await User.create({ username, email, password, online: true });
-      user.avatar = `https://picsum.photos/seed/${user.id}/200`;
-      await user.save();
+      user = await User.create({
+        username,
+        email,
+        password,
+        online: true,
+        avatar: `https://picsum.photos/seed/${username}/200`,
+      });
     } catch (err) {
       throw new DatabaseError(err.message, "signup");
     }
 
-    delete user.dataValues["password"];
-    delete user.dataValues["email"];
+    let token;
+    try {
+      token = jwt.sign({ id: user.id }, process.env.SECRET, { expiresIn: "1h" });
+    } catch (err) {
+      throw new JwtError(err.message, "signup");
+    }
+
+    user = user.get({ plain: true });
+    user.authToken = token;
+
+    delete user.password;
+    delete user.email;
 
     res.status(201).json({ success: true, message: "User created successfully", user });
     return;
@@ -53,8 +66,10 @@ const login = async (req, res, next) => {
     } catch (err) {
       throw new JwtError(err.message, "login");
     }
-    const { password, ...rest } = req.user.dataValues;
+    const { email, password, ...rest } = req.user.dataValues;
     rest.authToken = token;
+
+    await User.update({ online: true }, { where: { id: req.user.id } });
 
     res.status(201).json({ success: true, message: "Login successful", user: rest });
     return;
@@ -68,16 +83,11 @@ const login = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    const user = await User.findOne({ where: { id: req.user.id } });
-    if (!user) {
-      throw new ValidationError("Validation failed: User not found", "logout");
-    }
+    await User.update({ online: false }, { where: { id: req.authCheck.id } });
 
-    user.isOnline = false;
-    await user.save();
-    await user.reload();
+    const updatedUser = await User.findOne({ where: { id: req.authCheck.id } });
 
-    res.status(200).json({ success: true, message: "User logged out", user: user });
+    res.status(200).json({ success: true, message: "User logged out", user: updatedUser });
     return;
   } catch (err) {
     if (err instanceof ValidationError || err instanceof DatabaseError) {
@@ -90,7 +100,11 @@ const logout = async (req, res, next) => {
 const getAllUsers = async (req, res, next) => {
   try {
     const users = await User.findAll();
-    res.status(200).json({ success: true, data: users });
+    const updatedUsers = users.map((user) => {
+      const { password, email, ...rest } = user.dataValues;
+      return rest;
+    });
+    res.status(200).json({ success: true, data: updatedUsers });
   } catch (err) {
     next(new CustomError(err.message, 500, "getAllUsers"));
   }
