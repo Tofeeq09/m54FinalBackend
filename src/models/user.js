@@ -33,11 +33,5 @@ const User = sequelize.define("User", {
   },
 });
 
-// Add a hook to the User model
-User.afterCreate(async (user, options) => {
-  user.profile_photo = `https://picsum.photos/seed/${user.id}/200`;
-  await user.save();
-});
-
 // Export User model
 module.exports = User;
