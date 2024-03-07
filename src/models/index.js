@@ -1,7 +1,7 @@
 // src/models/index.js
 
 // Import the required modules
-const User = require("./User");
+const User = require("./user");
 const Group = require("./Group");
 const Event = require("./Event");
 const Post = require("./Post");
