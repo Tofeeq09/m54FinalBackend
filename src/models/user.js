@@ -24,9 +24,19 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  profile_photo: {
+  avatar: {
     type: DataTypes.STRING,
   },
+  online: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+});
+
+// Add a hook to the User model
+User.afterCreate(async (user, options) => {
+  user.profile_photo = `https://picsum.photos/seed/${user.id}/200`;
+  await user.save();
 });
 
 // Export User model
