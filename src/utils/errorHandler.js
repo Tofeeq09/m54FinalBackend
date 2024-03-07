@@ -32,6 +32,18 @@ class DatabaseError extends CustomError {
   }
 }
 
+class BcryptError extends CustomError {
+  constructor(message = "Bcrypt error", source) {
+    super(message, 500, source);
+  }
+}
+
+class JwtError extends CustomError {
+  constructor(message = "JWT error", source) {
+    super(message, 500, source);
+  }
+}
+
 const handleError = (err, req, res, next) => {
   if (err instanceof CustomError) {
     res.status(err.statusCode).json({
@@ -59,4 +71,13 @@ const handleError = (err, req, res, next) => {
   return;
 };
 
-module.exports = { handleError, CustomError, ValidationError, UnauthorizedError, NotFoundError, DatabaseError };
+module.exports = {
+  handleError,
+  CustomError,
+  ValidationError,
+  UnauthorizedError,
+  NotFoundError,
+  DatabaseError,
+  BcryptError,
+  JwtError,
+};
