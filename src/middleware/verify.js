@@ -32,7 +32,7 @@ const tokenCheck = async (req, res, next) => {
       throw new ValidationError("Validation failed: User not authenticated", "tokenCheck");
     }
 
-    req.user = user; // Changed from req.authCheck = user;
+    req.authCheck = user;
     next();
   } catch (err) {
     if (err instanceof ValidationError || err instanceof JwtError || err instanceof DatabaseError) {
