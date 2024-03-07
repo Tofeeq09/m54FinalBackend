@@ -3,7 +3,7 @@
 // Import the required modules
 const bcrypt = require("bcrypt");
 const saltRounds = parseInt(process.env.SALT_ROUNDS);
-const User = require("../models/User");
+const User = require("../models/user");
 const {
   ValidationError,
   DatabaseError,

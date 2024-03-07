@@ -104,11 +104,28 @@ const getAllUsers = async (req, res, next) => {
       const { password, email, ...rest } = user.dataValues;
       return rest;
     });
-    res.status(200).json({ success: true, data: updatedUsers });
+    res.status(200).json({ success: true, users: updatedUsers });
   } catch (err) {
     next(new CustomError(err.message, 500, "getAllUsers"));
   }
 };
 
+const getUser = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ where: { id: req.params.id } });
+    if (!user) {
+      throw new ValidationError("Validation failed: User not found", "getUser");
+    }
+
+    const { password, email, ...rest } = user.dataValues;
+    res.status(200).json({ success: true, user: rest });
+  } catch (err) {
+    if (err instanceof ValidationError || err instanceof DatabaseError) {
+      next(err);
+    }
+    next(new CustomError(err.message, 500, "getUser"));
+  }
+};
+
 // Export the user controller
-module.exports = { signup, login, logout, getAllUsers };
+module.exports = { signup, login, logout, getAllUsers, getUser };
