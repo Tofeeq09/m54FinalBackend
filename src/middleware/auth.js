@@ -2,8 +2,9 @@
 
 // Import the required modules
 const bcrypt = require("bcrypt");
+const { Op } = require("sequelize");
 const saltRounds = parseInt(process.env.SALT_ROUNDS);
-const User = require("../models/user");
+const { User } = require("../models");
 const {
   ValidationError,
   DatabaseError,
@@ -40,11 +41,38 @@ const hashPassword = async (req, res, next) => {
   }
 };
 
+const validate = async (req, res, next) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username && !email) {
+      throw new ValidationError("Validation failed: Username or Email is required", "validate");
+    }
+
+    if (!password) {
+      throw new ValidationError("Validation failed: Password is required", "validate");
+    }
+
+    next();
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      next(error);
+    }
+    next(new CustomError(error.message, 500, "validate"));
+  }
+};
+
 const findUser = async (req, res, next) => {
   try {
+    const whereClause = {};
+    if (req.body.username) whereClause.username = req.body.username;
+    if (req.body.email) whereClause.email = req.body.email;
+
     let user;
     try {
-      user = await User.findOne({ where: { username: req.body.username } });
+      user = await User.findOne({
+        where: whereClause,
+      });
     } catch (err) {
       throw new DatabaseError(err.message, "findUser");
     }
@@ -76,14 +104,6 @@ const comparePassword = async (req, res, next) => {
       throw new UnauthorizedError("Authorization failed: Incorrect password", "comparePass");
     }
 
-    console.log("Before:", req.user.isOnline);
-
-    req.user.isOnline = true;
-    await req.user.save();
-    req.user = await req.user.reload();
-
-    console.log("After:", req.user.isOnline);
-
     next();
   } catch (error) {
     if (error instanceof BcryptError || error instanceof UnauthorizedError) {
@@ -93,4 +113,4 @@ const comparePassword = async (req, res, next) => {
   }
 };
 
-module.exports = { findUser, hashPassword, comparePassword };
+module.exports = { hashPassword, validate, findUser, comparePassword };

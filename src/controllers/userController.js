@@ -66,10 +66,12 @@ const login = async (req, res, next) => {
     } catch (err) {
       throw new JwtError(err.message, "login");
     }
-    const { email, password, ...rest } = req.user.dataValues;
-    rest.authToken = token;
 
     await User.update({ online: true }, { where: { id: req.user.id } });
+    const onlineUser = await User.findOne({ where: { id: req.user.id } });
+    const { password, email, ...rest } = onlineUser.dataValues;
+
+    rest.authToken = token;
 
     res.status(201).json({ success: true, message: "Login successful", user: rest });
     return;

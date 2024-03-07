@@ -4,7 +4,7 @@
 const express = require("express");
 const router = express.Router();
 const { signup, login, logout, getAllUsers, getUser } = require("../controllers/userController");
-const { hashPassword, findUser, comparePassword } = require("../middleware/auth");
+const { hashPassword, validate, findUser, comparePassword } = require("../middleware/auth");
 const verify = require("../middleware/verify");
 
 // Define the user routes
@@ -12,7 +12,7 @@ const verify = require("../middleware/verify");
 router.get("/", getAllUsers);
 router.get("/:id", getUser);
 router.get("/verify", verify, login);
-router.post("/login", findUser, comparePassword, login);
+router.post("/login", validate, findUser, comparePassword, login);
 router.post("/signup", hashPassword, signup);
 router.put("/:id/logout", verify, logout);
 
