@@ -6,6 +6,8 @@ const Group = require("./Group");
 const Event = require("./Event");
 const Post = require("./Post");
 const Comment = require("./Comment");
+const GroupUser = require("./GroupUser");
+const EventUser = require("./EventUser");
 
 User.belongsToMany(Group, { through: "GroupUser" }); // A User can belong to many Groups
 Group.belongsToMany(User, { through: "GroupUser" }); // A Group can belong to many Users
@@ -35,7 +37,9 @@ Comment.belongsTo(Post); // A Comment belongs to a Post
 module.exports = {
   User,
   Group,
+  GroupUser,
   Event,
+  EventUser,
   Post,
   Comment,
 };

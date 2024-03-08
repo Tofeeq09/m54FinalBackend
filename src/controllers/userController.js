@@ -217,16 +217,20 @@ module.exports = {
     try {
       const { userId } = req.params;
 
-      // Fetch the user from the database
       const user = await User.findByPk(userId);
 
-      // Check if the user exists
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Get the groups of the user
-      const groups = await user.getGroups();
+      const groups = await user.getGroups({
+        include: [
+          {
+            model: GroupUser,
+            where: { userId: userId },
+          },
+        ],
+      });
 
       res.status(200).json(groups);
     } catch (error) {

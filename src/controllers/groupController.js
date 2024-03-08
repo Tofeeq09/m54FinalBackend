@@ -21,11 +21,15 @@ module.exports = {
       }
 
       const { name, description, privacy_settings } = req.body;
-      let { topic } = req.body;
+      let { topics } = req.body;
 
-      // Ensure that topic is an array
-      if (!Array.isArray(topic)) {
-        topic = [topic];
+      if (!Array.isArray(topics)) {
+        topics = [topics];
+      }
+
+      const existingGroup = await Group.findOne({ where: { name } });
+      if (existingGroup) {
+        throw new ValidationError("Validation failed: Group already exists", "createGroup");
       }
 
       let group;
@@ -33,7 +37,7 @@ module.exports = {
         group = await Group.create({
           name,
           description,
-          topic,
+          topics,
           privacy_settings,
         });
       } catch (err) {

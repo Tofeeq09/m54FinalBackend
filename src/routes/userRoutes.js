@@ -20,7 +20,7 @@ const { tokenCheck } = require("../middleware/verify");
 
 router.get("/", getAllUsers);
 router.get("/:id", getUser);
-router.get("/users/:userId/groups", getUserGroups);
+router.get("/:userId/groups", getUserGroups);
 router.get("/verify", tokenCheck, login);
 router.post("/verify", tokenCheck, login);
 router.post("/login", validate, findUser, comparePassword, login);
