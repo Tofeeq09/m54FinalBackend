@@ -223,14 +223,7 @@ module.exports = {
         return res.status(404).json({ error: "User not found" });
       }
 
-      const groups = await user.getGroups({
-        include: [
-          {
-            model: GroupUser,
-            where: { userId: userId },
-          },
-        ],
-      });
+      const groups = await user.getGroups();
 
       res.status(200).json(groups);
     } catch (error) {

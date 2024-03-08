@@ -12,6 +12,7 @@ const {
   BcryptError,
   JwtError,
 } = require("../utils/errorHandler");
+const { User } = require("../models");
 
 module.exports = {
   createGroup: async (req, res, next) => {
@@ -40,6 +41,11 @@ module.exports = {
           topics,
           privacy_settings,
         });
+
+        const user = await User.findByPk(req.authCheck.id);
+        if (user) {
+          await group.addUser(user, { through: { role: "admin" } });
+        }
       } catch (err) {
         throw new DatabaseError(err.message, "createGroup");
       }
