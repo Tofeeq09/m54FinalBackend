@@ -1,7 +1,7 @@
 // src/models/EventUser.js
 
 const { DataTypes } = require("sequelize");
-const sequelize = require("../db/connection");
+const { sequelize } = require("../db/connection");
 
 const EventUser = sequelize.define("EventUser", {
   role: {

@@ -1,7 +1,8 @@
 // src/controllers/groupController.js
 
 // Import the required modules
-const { Group } = require("../models");
+const Joi = require("joi");
+const { User, Group, GroupUser } = require("../models");
 const {
   CustomError,
   ValidationError,
@@ -11,8 +12,24 @@ const {
   DatabaseError,
   BcryptError,
   JwtError,
+  ConflictError,
+  RateLimitError,
+  NotImplementedError,
 } = require("../utils/errorHandler");
-const { User } = require("../models");
+
+const postSchema = Joi.object({
+  name: Joi.string().required(),
+  description: Joi.string().required(),
+  privacy_settings: Joi.string().required(),
+  topics: Joi.array().items(Joi.string()).required(),
+});
+
+const putSchema = Joi.object({
+  name: Joi.string().required(),
+  description: Joi.string().allow(""),
+  topics: Joi.array().items(Joi.string().valid("topic1", "topic2", "topic3", "topic4", "topic5")).allow(""),
+  privacy_settings: Joi.string().allow(""),
+}).unknown(true);
 
 module.exports = {
   createGroup: async (req, res, next) => {
@@ -21,12 +38,14 @@ module.exports = {
         throw new ForbiddenError("Forbidden", "createGroup");
       }
 
-      const { name, description, privacy_settings } = req.body;
-      let { topics } = req.body;
-
-      if (!Array.isArray(topics)) {
-        topics = [topics];
+      const { error, value } = postSchema.validate(req.body);
+      if (error) {
+        let errorMessage = error.details[0].message;
+        errorMessage = errorMessage.replace(/\"/g, "");
+        throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
       }
+
+      const { name, description, privacy_settings, topics } = value;
 
       const existingGroup = await Group.findOne({ where: { name } });
       if (existingGroup) {
@@ -54,12 +73,12 @@ module.exports = {
 
       res.status(201).json({ success: true, message: "Group created successfully", group });
       return;
-    } catch (error) {
-      if (error instanceof ValidationError || error instanceof DatabaseError) {
-        next(error);
+    } catch (err) {
+      if (err instanceof ValidationError || err instanceof DatabaseError) {
+        next(err);
         return;
       }
-      next(new CustomError(error.message, 500, "createGroup"));
+      next(new CustomError(err.message, 500, "createGroup"));
     }
   },
 
@@ -78,7 +97,7 @@ module.exports = {
         next(err);
         return;
       }
-      next(new CustomError(error.message, 500, "getAllGroups"));
+      next(new CustomError(err.message, 500, "getAllGroups"));
     }
   },
 
@@ -86,90 +105,130 @@ module.exports = {
     try {
       let group;
       try {
-        group = await Group.findByPk(req.params.id);
+        group = await Group.findByPk(req.params.groupId);
       } catch (err) {
         throw new DatabaseError(err.message, "getGroup");
       }
       if (!group) {
-        throw new CustomError("Group not found", 404, "getGroup");
+        throw new NotFoundError("Group not found", "getGroup");
       }
       res.status(200).json(group);
       return;
-    } catch (error) {
-      if (error instanceof DatabaseError) {
-        next(error);
+    } catch (err) {
+      if (err instanceof DatabaseError || err instanceof NotFoundError) {
+        next(err);
         return;
       }
-      next(new CustomError(error.message, 500, "getGroup"));
+      next(new CustomError(err.message, 500, "getGroup"));
     }
   },
 
   getGroupUsers: async (req, res, next) => {
     try {
-      const { groupId } = req.params;
-
-      // Fetch the group from the database
-      const group = await Group.findByPk(groupId);
-
-      // Check if the group exists
-      if (!group) {
-        return res.status(404).json({ error: "Group not found" });
+      let group;
+      try {
+        group = await Group.findByPk(req.params.groupId);
+      } catch (err) {
+        throw new DatabaseError(err.message, "getGroupUsers");
       }
 
-      // Get the users of the group
-      const users = await group.getUsers();
+      if (!group) {
+        throw new NotFoundError("Group not found", "getGroupUsers");
+      }
+
+      let users;
+      try {
+        users = await group.getUsers();
+      } catch (err) {
+        throw new DatabaseError(err.message, "getGroupUsers");
+      }
 
       res.status(200).json(users);
-    } catch (error) {
-      next(error);
+    } catch (err) {
+      if (err instanceof NotFoundError || err instanceof DatabaseError) {
+        next(err);
+        return;
+      }
+      next(new CustomError(err.message, 500, "getGroupUsers"));
     }
   },
 
   updateGroup: async (req, res, next) => {
     try {
+      const { error, value } = putSchema.validate(req.body);
+      if (error) {
+        let errorMessage = error.details[0].message;
+        errorMessage = errorMessage.replace(/\"/g, "");
+        throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
+      }
+
       let group;
       try {
-        group = await Group.findByPk(req.params.id);
+        group = await Group.findByPk(req.params.groupId);
       } catch (err) {
         throw new DatabaseError(err.message, "updateGroup");
       }
       if (group) {
-        await group.update(req.body);
+        await group.update(value);
         res.status(200).json(group);
         return;
       } else {
-        throw new CustomError("Group not found", 404, "updateGroup");
+        throw new NotFoundError("Group not found", "updateGroup");
       }
-    } catch (error) {
-      if (error instanceof DatabaseError || error instanceof CustomError) {
-        next(error);
+    } catch (err) {
+      if (err instanceof DatabaseError || err instanceof NotFoundError || err instanceof ValidationError) {
+        next(err);
         return;
       }
-      next(new CustomError(error.message, 500, "updateGroup"));
+      next(new CustomError(err.message, 500, "updateGroup"));
     }
   },
 
   deleteGroup: async (req, res, next) => {
     try {
-      let group;
+      if (!req.isAdmin) {
+        throw new ForbiddenError("Forbidden", "deleteGroup");
+      }
+
+      const groupId = req.params.groupId;
       try {
-        group = await Group.findByPk(req.params.id);
+        await Group.destroy({ where: { id: groupId } });
+        res.status(204).end();
+        return;
       } catch (err) {
         throw new DatabaseError(err.message, "deleteGroup");
       }
-      if (group) {
-        await group.destroy();
-        res.status(204).end();
-        return;
-      } else {
-        throw new CustomError("Group not found", 404, "deleteGroup");
-      }
-    } catch (error) {
-      if (error instanceof DatabaseError || error instanceof CustomError) {
-        next(error);
+    } catch (err) {
+      if (err instanceof DatabaseError || err instanceof ForbiddenError) {
+        next(err);
         return;
       }
-      next(new CustomError(error.message, 500, "deleteGroup"));
+      next(new CustomError(err.message, 500, "deleteGroup"));
+    }
+  },
+
+  removeUserFromGroup: async (req, res, next) => {
+    try {
+      if (!req.isAdmin) {
+        throw new ForbiddenError("Forbidden", "removeUserFromGroup");
+      }
+
+      const { groupId, userId } = req.params;
+
+      // Remove the user from the group
+      const result = await GroupUser.destroy({ where: { GroupId: groupId, UserId: userId } });
+
+      if (!result) {
+        throw new NotFoundError("User not found in group", "removeUserFromGroup");
+      }
+
+      res.status(200).json({ message: "User removed from group successfully" });
+    } catch (err) {
+      if (err instanceof ForbiddenError || err instanceof NotFoundError) {
+        next(err);
+        return;
+      }
+      next(new CustomError(err.message, 500, "removeUserFromGroup"));
     }
   },
 };

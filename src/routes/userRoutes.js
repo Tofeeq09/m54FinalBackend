@@ -19,16 +19,18 @@ const { tokenCheck } = require("../middleware/verify");
 // Define the user routes
 
 router.get("/", getAllUsers);
-router.get("/:id", getUser);
-router.get("/:userId/groups", getUserGroups);
 router.get("/verify", tokenCheck, login);
-router.post("/verify", tokenCheck, login);
-router.post("/login", validate, findUser, comparePassword, login);
+router.get("/:userId", getUser);
+
 router.post("/", hashPassword, signup);
+router.post("/login", validate, findUser, comparePassword, login);
+
+router.put("/logout", tokenCheck, logout);
+router.put("/", tokenCheck, compareAndUpdateUser, sendUpdatedUser);
+router.delete("/", tokenCheck, comparePassword, deleteUser);
+
+router.get("/:userId/groups", getUserGroups);
 router.post("/join/:groupId", tokenCheck, joinGroup);
-router.put("/:id/logout", tokenCheck, logout);
-router.put("/:id", tokenCheck, compareAndUpdateUser, sendUpdatedUser);
-router.delete("/:id", tokenCheck, comparePassword, deleteUser);
 
 // Export the user routes
 module.exports = router;

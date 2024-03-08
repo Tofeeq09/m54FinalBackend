@@ -1,6 +1,7 @@
 // src/controllers/userController.js
 
 // Import the required modules
+const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
 const { User } = require("../models");
@@ -13,12 +14,36 @@ const {
   DatabaseError,
   BcryptError,
   JwtError,
+  ConflictError,
+  RateLimitError,
+  NotImplementedError,
 } = require("../utils/errorHandler");
+const { Group } = require("../models");
+
+const postSchema = Joi.object({
+  username: Joi.string().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+});
+
+const putSchema = Joi.object({
+  isUsernameMatch: Joi.boolean().required(),
+  isEmailMatch: Joi.boolean().required(),
+  isPasswordMatch: Joi.boolean().required(),
+  isAvatarMatch: Joi.boolean().required(),
+}).unknown(true);
 
 module.exports = {
   signup: async (req, res, next) => {
     try {
-      const { username, email, password } = req.body;
+      const { error, value } = postSchema.validate(req.body);
+      if (error) {
+        let errorMessage = error.details[0].message;
+        errorMessage = errorMessage.replace(/\"/g, "");
+        throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
+      }
+
+      const { username, email, password } = value;
 
       const userExists = await User.findOne({ where: { [Op.or]: [{ username }, { email }] } });
       if (userExists) {
@@ -32,8 +57,14 @@ module.exports = {
           email,
           password,
           online: true,
-          avatar: `https://picsum.photos/seed/${username}/200`,
         });
+      } catch (err) {
+        throw new DatabaseError(err.message, "signup");
+      }
+
+      try {
+        user.avatar = `https://picsum.photos/seed/${user.id}/200`;
+        await user.save();
       } catch (err) {
         throw new DatabaseError(err.message, "signup");
       }
@@ -51,7 +82,7 @@ module.exports = {
       res.status(201).json({ success: true, message: "User created successfully", user: rest });
       return;
     } catch (error) {
-      if (error instanceof ValidationError || error instanceof DatabaseError) {
+      if (error instanceof ValidationError || error instanceof DatabaseError || error instanceof JwtError) {
         next(error);
         return;
       }
@@ -69,21 +100,20 @@ module.exports = {
 
       let token;
       try {
-        token = jwt.sign({ id: req.user.id }, process.env.SECRET, { expiresIn: "1h" });
+        token = jwt.sign({ id: req.user.id }, process.env.SECRET, { expiresIn: "8h" });
       } catch (err) {
         throw new JwtError(err.message, "login");
       }
 
       await User.update({ online: true }, { where: { id: req.user.id } });
-      const onlineUser = await User.findOne({ where: { id: req.user.id } });
-      const { password, email, ...rest } = onlineUser.dataValues;
-
+      let onlineUser = await User.findOne({ where: { id: req.user.id } });
+      let { password, email, ...rest } = onlineUser.dataValues;
       rest.authToken = token;
 
       res.status(201).json({ success: true, message: "Login successful", user: rest });
       return;
     } catch (err) {
-      if (err instanceof JwtError) {
+      if (err instanceof JwtError || err instanceof DatabaseError) {
         next(err);
         return;
       }
@@ -93,31 +123,48 @@ module.exports = {
 
   joinGroup: async (req, res, next) => {
     try {
-      const { userId, groupId } = req.params;
+      const groupId = req.params.groupId;
+      const userId = req.authCheck.id;
 
-      // Fetch the user and group from the database
       const user = await User.findByPk(userId);
       const group = await Group.findByPk(groupId);
 
       // Check if the user and group exist
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        throw new NotFoundError("User not found");
       }
       if (!group) {
-        return res.status(404).json({ error: "Group not found" });
+        throw new NotFoundError("Group not found");
       }
 
-      // Add the user to the group
-      await user.addGroup(group);
+      // Check if the user is already a member of the group
+      const isMember = await group.hasUser(user);
+      if (isMember) {
+        throw new ValidationError(`User ${user.username} is already a member of group ${group.name}`, "joinGroup");
+      }
 
-      res.status(200).json({ message: "User successfully added to group" });
+      try {
+        await user.addGroup(group);
+      } catch (err) {
+        throw new DatabaseError(err.message, "joinGroup");
+      }
+
+      res.status(200).json({ message: `User ${user.username} successfully added to group ${group.name}` });
     } catch (error) {
-      next(error);
+      if (error instanceof NotFoundError || error instanceof ValidationError || error instanceof DatabaseError) {
+        next(error);
+        return;
+      }
+      next(new CustomError(error.message, 500, "joinGroup"));
     }
   },
 
   logout: async (req, res, next) => {
     try {
+      if (!req.authCheck) {
+        throw new UnauthorizedError("User not authenticated", "logout");
+      }
+
       let user;
       try {
         user = await User.findByPk(req.authCheck.id);
@@ -128,9 +175,16 @@ module.exports = {
         await user.update({ online: false });
         res.status(200).json({ success: true, message: "User logged out", user });
         return;
+      } else {
+        throw new NotFoundError("User not found", "logout");
       }
     } catch (error) {
-      if (error instanceof ValidationError || error instanceof DatabaseError || error instanceof CustomError) {
+      if (
+        error instanceof ValidationError ||
+        error instanceof DatabaseError ||
+        error instanceof NotFoundError ||
+        error instanceof CustomError
+      ) {
         next(error);
         return;
       }
@@ -144,30 +198,28 @@ module.exports = {
         throw new UnauthorizedError("User not authenticated", "sendUpdatedUser");
       }
 
-      if (req.authCheck.id.toString() !== req.params.id) {
-        throw new ForbiddenError("User not authorized", "sendUpdatedUser");
-      }
-
-      console.log("isUsernameMatch:", req.authCheck.isUsernameMatch);
-
       const user = req.authCheck;
       const { password, ...rest } = user.dataValues;
 
-      if (!req.authCheck.isUsernameMatch && req.authCheck.id.toString() === req.params.id) {
+      if (!req.authCheck.isUsernameMatch) {
         rest.usernameChanged = true;
       }
-      if (!req.authCheck.isEmailMatch && req.authCheck.id.toString() === req.params.id) {
+      if (!req.authCheck.isEmailMatch) {
         rest.emailChanged = true;
       }
-      if (!req.authCheck.isPasswordMatch && req.authCheck.id.toString() === req.params.id) {
+      if (!req.authCheck.isPasswordMatch) {
         rest.passwordChanged = true;
       }
-      if (!req.authCheck.isAvatarMatch && req.authCheck.id.toString() === req.params.id) {
+      if (!req.authCheck.isAvatarMatch) {
         rest.avatarChanged = true;
       }
 
       res.status(200).json({ success: true, message: "User updated", user: rest });
     } catch (error) {
+      if (error instanceof UnauthorizedError || error instanceof ForbiddenError || error instanceof ValidationError) {
+        next(error);
+        return;
+      }
       next(new CustomError(error.message, 500, "sendUpdatedUser"));
     }
   },
@@ -197,7 +249,12 @@ module.exports = {
 
   getUser: async (req, res, next) => {
     try {
-      const user = await User.findByPk(req.params.id);
+      let user;
+      try {
+        user = await User.findByPk(req.params.userId);
+      } catch (err) {
+        throw new DatabaseError(err.message, "getUser");
+      }
       if (!user) {
         throw new NotFoundError("User not found", "getUser");
       }
@@ -217,30 +274,44 @@ module.exports = {
     try {
       const { userId } = req.params;
 
-      const user = await User.findByPk(userId);
-
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+      let user;
+      try {
+        user = await User.findByPk(userId);
+      } catch (err) {
+        throw new DatabaseError(err.message, "getUserGroups");
       }
 
-      const groups = await user.getGroups();
+      if (!user) {
+        throw new NotFoundError("User not found", "getUserGroups");
+      }
+
+      let groups;
+      try {
+        groups = await user.getGroups();
+      } catch (err) {
+        throw new DatabaseError(err.message, "getUserGroups");
+      }
 
       res.status(200).json(groups);
     } catch (error) {
-      next(error);
+      if (error instanceof NotFoundError || error instanceof DatabaseError) {
+        next(error);
+        return;
+      }
+      next(new CustomError(error.message, 500, "getUserGroups"));
     }
   },
 
   deleteUser: async (req, res, next) => {
     try {
       if (!req.authCheck) {
-        throw new ValidationError("User not authenticated", "updateUser");
+        throw new ValidationError("User not authenticated", "deleteUser");
       }
 
       try {
         await req.authCheck.destroy();
       } catch (err) {
-        throw new CustomError("Error while deleting user", 500, "deleteUser");
+        throw new DatabaseError(err.message, "deleteUser");
       }
 
       res.status(204).end();

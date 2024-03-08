@@ -1,7 +1,7 @@
 // src/models/GroupUser.js
 
 const { DataTypes } = require("sequelize");
-const sequelize = require("../db/connection");
+const { sequelize } = require("../db/connection");
 
 const GroupUser = sequelize.define("GroupUser", {
   role: {
