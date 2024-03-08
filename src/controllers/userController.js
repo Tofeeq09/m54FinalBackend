@@ -18,7 +18,7 @@ const {
   RateLimitError,
   NotImplementedError,
 } = require("../utils/errorHandler");
-const { Group } = require("../models");
+const { Group, GroupUser, Event, EventUser, Post, Comment } = require("../models");
 
 const postSchema = Joi.object({
   username: Joi.string().required(),
@@ -321,6 +321,50 @@ module.exports = {
         return;
       }
       next(new CustomError(error.message, 500, "deleteUser"));
+    }
+  },
+
+  leaveGroup: async (req, res, next) => {
+    try {
+      const groupId = req.params.groupId;
+      const userId = req.authCheck.id;
+
+      const user = await User.findByPk(userId);
+      const group = await Group.findByPk(groupId);
+
+      // Check if the user and group exist
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
+      if (!group) {
+        throw new NotFoundError("Group not found");
+      }
+
+      // Check if the user is an admin of the group
+      const groupUser = await GroupUser.findOne({ where: { UserId: userId, GroupId: groupId } });
+      if (groupUser && groupUser.role === "admin") {
+        throw new ValidationError(`Admin user ${user.username} cannot leave group ${group.name}`, "leaveGroup");
+      }
+
+      // Check if the user is a member of the group
+      const isMember = await group.hasUser(user);
+      if (!isMember) {
+        throw new ValidationError(`User ${user.username} is not a member of group ${group.name}`, "leaveGroup");
+      }
+
+      try {
+        await user.removeGroup(group);
+      } catch (err) {
+        throw new DatabaseError(err.message, "leaveGroup");
+      }
+
+      res.status(200).json({ message: `User ${user.username} successfully removed from group ${group.name}` });
+    } catch (error) {
+      if (error instanceof NotFoundError || error instanceof ValidationError || error instanceof DatabaseError) {
+        next(error);
+        return;
+      }
+      next(new CustomError(error.message, 500, "leaveGroup"));
     }
   },
 };

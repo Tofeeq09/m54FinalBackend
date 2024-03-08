@@ -12,6 +12,7 @@ const {
   deleteUser,
   getUserGroups,
   joinGroup,
+  leaveGroup,
 } = require("../controllers/userController");
 const { hashPassword, validate, findUser, compareAndUpdateUser, comparePassword } = require("../middleware/auth");
 const { tokenCheck } = require("../middleware/verify");
@@ -30,7 +31,8 @@ router.put("/", tokenCheck, compareAndUpdateUser, sendUpdatedUser);
 router.delete("/", tokenCheck, comparePassword, deleteUser);
 
 router.get("/:userId/groups", getUserGroups);
-router.post("/join/:groupId", tokenCheck, joinGroup);
+router.post("/group/:groupId", tokenCheck, joinGroup);
+router.delete("/group/:groupId", tokenCheck, leaveGroup);
 
 // Export the user routes
 module.exports = router;
