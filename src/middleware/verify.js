@@ -12,6 +12,9 @@ const {
   DatabaseError,
   BcryptError,
   JwtError,
+  ConflictError,
+  RateLimitError,
+  NotImplementedError,
 } = require("../utils/errorHandler");
 
 // Define the tokenCheck middleware
@@ -38,16 +41,22 @@ module.exports = {
       }
 
       if (!user) {
-        throw new ValidationError("Validation failed: User not authenticated", "tokenCheck");
+        throw new UnauthorizedError("User not authenticated", "tokenCheck");
       }
 
       req.authCheck = user;
       next();
     } catch (err) {
-      if (err instanceof ValidationError || err instanceof JwtError || err instanceof DatabaseError) {
+      if (
+        err instanceof ValidationError ||
+        err instanceof JwtError ||
+        err instanceof DatabaseError ||
+        err instanceof UnauthorizedError
+      ) {
         next(err);
+      } else {
+        next(new CustomError(err.message, 500, "tokenCheck"));
       }
-      next(new CustomError(err.message, 500, "tokenCheck"));
     }
   },
 };

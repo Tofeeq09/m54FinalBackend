@@ -1,8 +1,8 @@
 // src/middleware/auth.js
 
 // Import the required modules
+const Joi = require("joi");
 const bcrypt = require("bcrypt");
-const { Op } = require("sequelize");
 const saltRounds = parseInt(process.env.SALT_ROUNDS);
 const { User } = require("../models");
 const {
@@ -14,18 +14,24 @@ const {
   DatabaseError,
   BcryptError,
   JwtError,
+  ConflictError,
+  RateLimitError,
+  NotImplementedError,
 } = require("../utils/errorHandler");
+const { GroupUser } = require("../models");
+
+const userUpdateSchema = Joi.object({
+  username: Joi.string().optional(),
+  email: Joi.string().email().optional(),
+  password: Joi.string().min(6).optional(),
+  avatar: Joi.string().optional(),
+}).unknown(true);
 
 // Define the auth middleware
 
 module.exports = {
   hashPassword: async (req, res, next) => {
     try {
-      // if (req.authCheck.isPasswordMatch === true || req.authCheck.isPasswordMatch === undefined) {
-      //   next();
-      //   return;
-      // }
-
       const { password } = req.body;
 
       if (!password) {
@@ -95,8 +101,7 @@ module.exports = {
       req.user = user;
       next();
     } catch (error) {
-      next(error);
-      if (error instanceof ValidationError || error instanceof DatabaseError || error instanceof NotFoundError) {
+      if (error instanceof DatabaseError || error instanceof NotFoundError) {
         next(error);
         return;
       }
@@ -106,25 +111,32 @@ module.exports = {
 
   compareAndUpdateUser: async (req, res, next) => {
     try {
-      // If user is authenticated and the user id matches the id in the request do this...
-      if (req.authCheck && req.authCheck.id.toString() === req.params.id) {
+      const { error, value } = userUpdateSchema.validate(req.body);
+      if (error) {
+        let errorMessage = error.details[0].message;
+        errorMessage = errorMessage.replace(/\"/g, "");
+        throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
+      }
+
+      // If user is authenticated do this...
+      if (req.authCheck) {
         const user = req.authCheck;
 
         // Update user's properties
-        user.username = req.body.username || user.username;
-        user.email = req.body.email || user.email;
-        user.avatar = req.body.avatar || user.avatar;
+        user.username = value.username || user.username;
+        user.email = value.email || user.email;
+        user.avatar = value.avatar || user.avatar;
 
-        if (req.body.password) {
+        if (value.password) {
           try {
             // Check if password has been changed
-            const isMatch = await bcrypt.compare(req.body.password, user.password);
+            const isMatch = await bcrypt.compare(value.password, user.password);
             if (!isMatch) {
               // Hash new password
-              user.password = await bcrypt.hash(req.body.password, saltRounds);
+              user.password = await bcrypt.hash(value.password, saltRounds);
             }
           } catch (err) {
-            throw new CustomError("Error while comparing or hashing password", 500, "compareAndUpdateUser");
+            throw new BcryptError(err.message, "compareAndUpdateUser");
           }
         }
 
@@ -139,16 +151,21 @@ module.exports = {
           try {
             await user.save();
           } catch (err) {
-            throw new CustomError("Error while saving user", 500, "compareAndUpdateUser");
+            throw new DatabaseError(err.message, "compareAndUpdateUser");
           }
         }
 
+        // Send updated user to the next middleware
         next();
         return;
       }
 
       next();
     } catch (err) {
+      if (err instanceof ValidationError || err instanceof BcryptError || err instanceof DatabaseError) {
+        next(err);
+        return;
+      }
       next(new CustomError(err.message, 500, "compareAndUpdateUser"));
     }
   },
@@ -185,6 +202,42 @@ module.exports = {
         return;
       }
       next(new CustomError(error.message, 500, "comparePass"));
+    }
+  },
+
+  adminCheck: async (req, res, next) => {
+    try {
+      const userId = req.authCheck.id;
+      const groupId = req.params.groupId;
+
+      let groupUser;
+      try {
+        groupUser = await GroupUser.findOne({
+          where: {
+            UserId: userId,
+            GroupId: groupId,
+          },
+        });
+      } catch (err) {
+        throw new DatabaseError(err.message, "adminCheck");
+      }
+
+      if (!groupUser) {
+        throw new NotFoundError("User not found in group", "adminCheck");
+      }
+
+      if (groupUser.role !== "admin") {
+        throw new ForbiddenError("User is not an admin", "adminCheck");
+      }
+
+      req.isAdmin = true;
+      next();
+    } catch (error) {
+      if (error instanceof ForbiddenError || error instanceof NotFoundError || error instanceof DatabaseError) {
+        next(error);
+        return;
+      }
+      next(new CustomError(error.message, 500, "adminCheck"));
     }
   },
 };

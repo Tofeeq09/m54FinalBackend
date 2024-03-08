@@ -3,6 +3,7 @@ node_modules/
 
 # Ignore environment variables
 .env
+*.local
 
 # Ignore system files
 .DS_Store

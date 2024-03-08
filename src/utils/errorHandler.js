@@ -35,6 +35,21 @@ class NotFoundError extends CustomError {
     this.userMessage = "The resource you're looking for could not be found.";
   }
 }
+
+class ConflictError extends CustomError {
+  constructor(message = "Conflict", source) {
+    super(message, 409, source);
+    this.userMessage = "Your request could not be completed due to a conflict with the current state of the resource.";
+  }
+}
+
+class RateLimitError extends CustomError {
+  constructor(message = "Too many requests", source) {
+    super(message, 429, source);
+    this.userMessage = "You have made too many requests. Please try again later.";
+  }
+}
+
 class DatabaseError extends CustomError {
   constructor(message = "Database error", source) {
     super(message, 500, source);
@@ -53,6 +68,13 @@ class JwtError extends CustomError {
   constructor(message = "JWT error", source) {
     super(message, 500, source);
     this.userMessage = "An error occurred while processing your request. Please try again later.";
+  }
+}
+
+class NotImplementedError extends CustomError {
+  constructor(message = "Not implemented", source) {
+    super(message, 501, source);
+    this.userMessage = "The requested operation is not supported.";
   }
 }
 
@@ -94,4 +116,7 @@ module.exports = {
   DatabaseError,
   BcryptError,
   JwtError,
+  ConflictError,
+  RateLimitError,
+  NotImplementedError,
 };
