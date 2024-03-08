@@ -6,20 +6,21 @@ const cors = require("cors");
 const sequelize = require("./db/connection");
 const models = require("./models");
 const { handleError } = require("./utils/errorHandler");
-const userRoutes = require("./routes/userRoutes");
+const { userRoutes, groupRoutes } = require("./routes");
 
 const app = express();
 const port = process.env.PORT || 5001;
 const tableNames = Object.values(models).map((model) => model.tableName);
 const tableNamesString = tableNames.join(", ");
-0;
+
 app.use(cors());
 app.use(express.json());
-
 app.use("/api/users", userRoutes);
+app.use("/api/groups", groupRoutes);
 
 app.get("/health", (req, res) => {
-  res.status(200).json({ message: "Server is running" });
+  res.status(200).json({ message: "API is live" });
+  return;
 });
 
 const syncDatabase = async () => {

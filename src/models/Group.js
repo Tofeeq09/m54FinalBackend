@@ -18,7 +18,7 @@ const Group = sequelize.define("Group", {
   description: {
     type: DataTypes.TEXT,
   },
-  tags: {
+  topics: {
     type: DataTypes.ARRAY(DataTypes.STRING),
   },
   privacy_settings: {

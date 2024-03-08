@@ -1,20 +1,34 @@
 // src/routes/userRoutes.js
 
 // Import the required modules
-const express = require("express");
-const router = express.Router();
-const { signup, login, logout, getAllUsers, getUser } = require("../controllers/userController");
-const { hashPassword, validate, findUser, comparePassword } = require("../middleware/auth");
-const verify = require("../middleware/verify");
+const router = require("express").Router();
+const {
+  signup,
+  login,
+  logout,
+  getAllUsers,
+  getUser,
+  sendUpdatedUser,
+  deleteUser,
+  getUserGroups,
+  joinGroup,
+} = require("../controllers/userController");
+const { hashPassword, validate, findUser, compareAndUpdateUser, comparePassword } = require("../middleware/auth");
+const { tokenCheck } = require("../middleware/verify");
 
 // Define the user routes
 
 router.get("/", getAllUsers);
 router.get("/:id", getUser);
-router.get("/verify", verify, login);
+router.get("/users/:userId/groups", getUserGroups);
+router.get("/verify", tokenCheck, login);
+router.post("/verify", tokenCheck, login);
 router.post("/login", validate, findUser, comparePassword, login);
-router.post("/signup", hashPassword, signup);
-router.put("/:id/logout", verify, logout);
+router.post("/", hashPassword, signup);
+router.post("/join/:groupId", tokenCheck, joinGroup);
+router.put("/:id/logout", tokenCheck, logout);
+router.put("/:id", tokenCheck, compareAndUpdateUser, sendUpdatedUser);
+router.delete("/:id", tokenCheck, comparePassword, deleteUser);
 
 // Export the user routes
 module.exports = router;
