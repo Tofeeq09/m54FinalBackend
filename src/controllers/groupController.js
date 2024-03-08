@@ -143,7 +143,12 @@ module.exports = {
         throw new DatabaseError(err.message, "getGroupUsers");
       }
 
-      res.status(200).json(users);
+      const updatedUsers = users.map((user) => {
+        const { password, email, ...rest } = user.dataValues;
+        return rest;
+      });
+
+      res.status(200).json({ users: updatedUsers });
     } catch (err) {
       if (err instanceof NotFoundError || err instanceof DatabaseError) {
         next(err);

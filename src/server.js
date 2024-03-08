@@ -7,7 +7,7 @@ const rateLimit = require("express-rate-limit");
 const { sequelize } = require("./db/connection");
 const models = require("./models");
 const { handleError } = require("./utils/errorHandler");
-const { userRoutes, groupRoutes } = require("./routes");
+const { userRoutes, groupRoutes, eventRoutes } = require("./routes");
 const { RateLimitError } = require("./utils/errorHandler");
 
 const app = express();
@@ -30,6 +30,7 @@ app.use(express.json());
 app.use(limiter);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/events", eventRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "API is live" });
