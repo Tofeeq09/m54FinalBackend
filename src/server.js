@@ -1,14 +1,15 @@
 // Path: src/server.js
 
 require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const rateLimit = require("express-rate-limit");
+const express = require("express"); // https://expressjs.com/en/resources/middleware.html
+const cors = require("cors"); // https://www.npmjs.com/package/cors
+const cookieParser = require("cookie-parser"); // https://www.npmjs.com/package/cookie-parser
+const morgan = require("morgan"); // https://www.npmjs.com/package/morgan
+const rateLimit = require("express-rate-limit"); // https://www.npmjs.com/package/express-rate-limit
+const { handleError, RateLimitError } = require("./utils/errorHandler");
 const { sequelize } = require("./db/connection");
-const models = require("./models");
-const { handleError } = require("./utils/errorHandler");
 const { userRoutes, groupRoutes, eventRoutes } = require("./routes");
-const { RateLimitError } = require("./utils/errorHandler");
+const models = require("./models");
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -16,7 +17,6 @@ const port = process.env.PORT || 5001;
 const tableNames = Object.values(models).map((model) => model.tableName);
 const tableNamesString = tableNames.join(", ");
 
-// https://www.npmjs.com/package/express-rate-limit
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // 100 requests per windowMs
@@ -27,6 +27,8 @@ const limiter = rateLimit({
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+app.use(morgan("dev"));
 app.use(limiter);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);

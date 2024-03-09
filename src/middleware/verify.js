@@ -21,10 +21,12 @@ const {
 module.exports = {
   tokenCheck: async (req, res, next) => {
     try {
+      // Check if Authorization header present
       if (!req.header("Authorization")) {
         throw new ValidationError("Validation failed: No token passed", "tokenCheck");
       }
 
+      // Verify the token
       let decodedToken;
       try {
         const token = req.header("Authorization").replace("Bearer ", "");
@@ -33,6 +35,7 @@ module.exports = {
         throw new JwtError(err.message, "tokenCheck");
       }
 
+      // Find the user
       let user;
       try {
         user = await User.findOne({ where: { id: decodedToken.id } });
@@ -40,11 +43,14 @@ module.exports = {
         throw new DatabaseError(err.message, "tokenCheck");
       }
 
+      // Check if user does not exist
       if (!user) {
         throw new UnauthorizedError("User not authenticated", "tokenCheck");
       }
 
+      // Attach sequelize user object to request object
       req.authCheck = user;
+
       next();
     } catch (err) {
       if (
