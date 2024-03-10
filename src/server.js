@@ -8,7 +8,7 @@ const morgan = require("morgan"); // https://www.npmjs.com/package/morgan
 const rateLimit = require("express-rate-limit"); // https://www.npmjs.com/package/express-rate-limit
 const { handleError, RateLimitError } = require("./utils/errorHandler");
 const { sequelize } = require("./db/connection");
-const { userRoutes, groupRoutes, eventRoutes } = require("./routes");
+const { userRoutes, groupRoutes, eventRoutes, postRoutes } = require("./routes");
 const models = require("./models");
 
 const app = express();
@@ -33,6 +33,7 @@ app.use(limiter);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/posts", postRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "API is live" });

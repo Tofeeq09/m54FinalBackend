@@ -8,6 +8,8 @@ const Post = require("./Post");
 const Comment = require("./Comment");
 const GroupUser = require("./GroupUser");
 const EventUser = require("./EventUser");
+const BannedUser = require("./BannedUser");
+const Friendship = require("./Friendship");
 
 // User and Group are independent, with GroupUser as a through table
 User.belongsToMany(Group, { through: GroupUser });
@@ -16,6 +18,10 @@ Group.belongsToMany(User, { through: GroupUser });
 // Direct associations between GroupUser and Group, User
 GroupUser.belongsTo(Group);
 GroupUser.belongsTo(User);
+
+// User and Group are associated through BannedUser
+User.belongsToMany(Group, { through: BannedUser });
+Group.belongsToMany(User, { through: BannedUser });
 
 // Event depends on User and Group, with EventUser as a through table
 User.belongsToMany(Event, { through: EventUser });
@@ -45,6 +51,9 @@ Comment.belongsTo(User);
 Post.hasMany(Comment);
 Comment.belongsTo(Post);
 
+// User has many friends through Friendship
+User.belongsToMany(User, { as: "Friends", through: Friendship, foreignKey: "userId", otherKey: "friendId" });
+
 // Export the models
 module.exports = {
   User,
@@ -54,4 +63,6 @@ module.exports = {
   EventUser,
   Post,
   Comment,
+  BannedUser,
+  Friendship,
 };

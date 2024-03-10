@@ -14,9 +14,8 @@ const {
   deleteGroup,
   removeUserFromGroup,
   getGroupEvents,
-  banUserFromGroup,
+  banUser,
 } = require("../controllers/groupController");
-const { deleteEvent } = require("../controllers/eventController");
 
 // Define the group routes
 
@@ -30,7 +29,8 @@ router.get("/:groupId/events", groupCheck, getGroupEvents);
 router.put("/:groupId", tokenCheck, adminCheck, updateGroup);
 
 router.delete("/:groupId", tokenCheck, adminCheck, deleteGroup);
-router.delete("/:groupId/user/kick/:userId", tokenCheck, adminCheck, removeUserFromGroup);
+router.delete("/:groupId/kick/:userId", tokenCheck, adminCheck, removeUserFromGroup);
+// router.post("/:groupId/ban/:userId", tokenCheck, adminCheck, banUser);
 
 // Export the group routes
 module.exports = router;
