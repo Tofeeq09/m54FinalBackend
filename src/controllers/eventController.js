@@ -2,7 +2,7 @@
 
 // Import the required modules
 const Joi = require("joi");
-const { User, Group, GroupUser, Event, EventUser } = require("../models");
+const { User, Group, GroupUser, Event, EventUser, Post } = require("../models");
 const {
   CustomError,
   ValidationError,

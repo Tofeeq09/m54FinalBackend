@@ -16,7 +16,7 @@ router.get("/:eventId", getEvent);
 router.put("/:eventId", tokenCheck, organizerCheck, updateEvent);
 
 router.delete("/:eventId", tokenCheck, organizerCheck, deleteEvent);
-router.delete("/groups/:groupId/events/:eventId", tokenCheck, adminCheck, deleteEvent);
+router.delete("/groups/:groupId/event/:eventId", tokenCheck, adminCheck, deleteEvent);
 
 // Export the event routes
 module.exports = router;

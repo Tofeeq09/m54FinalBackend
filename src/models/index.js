@@ -8,7 +8,6 @@ const Post = require("./Post");
 const Comment = require("./Comment");
 const GroupUser = require("./GroupUser");
 const EventUser = require("./EventUser");
-const BannedUser = require("./BannedUser");
 const Friendship = require("./Friendship");
 
 // User and Group are independent, with GroupUser as a through table
@@ -59,6 +58,5 @@ module.exports = {
   EventUser,
   Post,
   Comment,
-  BannedUser,
   Friendship,
 };

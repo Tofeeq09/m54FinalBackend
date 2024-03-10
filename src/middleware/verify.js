@@ -31,12 +31,6 @@ module.exports = {
       try {
         const token = req.header("Authorization").replace("Bearer ", "");
         decodedToken = jwt.verify(token, process.env.SECRET);
-
-        // Check if token is blacklisted
-        const blacklistedToken = await BlacklistedToken.findOne({ where: { token } });
-        if (blacklistedToken) {
-          throw new JwtError("Token has been invalidated", "tokenCheck");
-        }
       } catch (err) {
         throw new JwtError(err.message, "tokenCheck");
       }

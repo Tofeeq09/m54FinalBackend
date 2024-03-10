@@ -40,6 +40,11 @@ app.get("/health", (req, res) => {
   return;
 });
 
+app.get("/api/validTopics", (req, res) => {
+  const validTopics = ["topic1", "topic2", "topic3", "topic4", "topic5"];
+  res.json(validTopics);
+});
+
 const syncDatabase = async () => {
   try {
     await sequelize.sync();

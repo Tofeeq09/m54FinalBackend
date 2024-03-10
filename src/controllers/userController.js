@@ -455,7 +455,7 @@ module.exports = {
         throw new NotFoundError("User not found", "getUserEvents");
       }
 
-      // Find all events that the user is a member of and count them
+      // Find all events user plans to join and count them
       let result;
       try {
         result = await Event.findAndCountAll({
@@ -466,14 +466,36 @@ module.exports = {
               attributes: [],
               through: { attributes: [] },
             },
+            {
+              model: Group,
+              attributes: ["name"],
+            },
           ],
         });
       } catch (err) {
         throw new DatabaseError(err.message, "getUserEvents");
       }
 
+      // Prepare response
+      const events = result.rows.map((event) => {
+        return {
+          ...event.get(),
+          attendeeCount: event.Users ? event.Users.length : 0,
+        };
+      });
+
+      const currentDate = new Date();
+      const pastEvents = events.filter((event) => new Date(event.date) < currentDate);
+      const upcomingEvents = events.filter((event) => new Date(event.date) >= currentDate);
+
+      const response = {
+        count: result.count,
+        pastEvents,
+        upcomingEvents,
+      };
+
       // Send the response to the client
-      res.status(200).json({ count: result.count, events: result.rows });
+      res.status(200).json(response);
     } catch (err) {
       if (err instanceof NotFoundError || err instanceof DatabaseError) {
         next(err);
