@@ -17,12 +17,14 @@ const {
   NotImplementedError,
 } = require("../utils/errorHandler");
 
-const updateEventSchema = Joi.object({
-  name: Joi.string().min(3).max(50),
-  description: Joi.string().min(10).max(500),
-  date: Joi.date(),
-  time: Joi.string().pattern(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/), // HH:MM format
-  location: Joi.string().min(3).max(100),
+const eventSchema = Joi.object({
+  name: Joi.string().required(),
+  description: Joi.string().required(),
+  date: Joi.date().required(),
+  time: Joi.string().pattern(new RegExp("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$")).required().messages({
+    "string.pattern.base": "Time must be in the format HH:MM",
+  }),
+  location: Joi.string().required(),
 });
 
 module.exports = {
@@ -31,28 +33,39 @@ module.exports = {
       const user = req.authCheck;
       const group = req.group;
 
-      // Check if the group exist
+      // Validate request body
+      const { error, value } = eventSchema.validate(req.body);
+      if (error) {
+        let errorMessage = error.details[0].message;
+        errorMessage = errorMessage.replace(/\"/g, "");
+        throw new ValidationError(`Validation failed: ${errorMessage}`, "createEvent");
+      }
+
+      // Extract required fields from request body
+      const { name, description, date, time, location } = value;
+
+      // Check if group exist
       if (!group) {
         throw new NotFoundError("Group not found");
       }
 
-      // Check if the user is a member of the group
+      // Check if user is a member of group
       const isMember = await group.hasUser(user);
       if (!isMember) {
         throw new ValidationError(`User ${user.username} is not a member of group ${group.name}`, "createEvent");
       }
 
-      // Create the event
+      // Create event
       const event = await Event.create({
-        name: req.body.name,
-        description: req.body.description,
-        date: req.body.date,
-        time: req.body.time,
-        location: req.body.location,
+        name,
+        description,
+        date,
+        time,
+        location,
         GroupId: group.id,
       });
 
-      // Associate the user with the event as the organizer
+      // Associate user with event as the organizer
       await EventUser.create({
         UserId: user.id,
         EventId: event.id,
@@ -72,6 +85,7 @@ module.exports = {
 
   getAllEvents: async (req, res, next) => {
     try {
+      // Get all event with their group and attendees
       const events = await Event.findAll({
         include: [
           {
@@ -85,14 +99,17 @@ module.exports = {
         ],
       });
 
+      // Count events
       const count = events.length;
 
+      // Attach attendee count to each event
       const eventsWithAttendeeCount = events.map((event) => {
         const eventJSON = event.toJSON();
         eventJSON.attendeeCount = event.Users.length;
         return eventJSON;
       });
 
+      // Send response to client
       res.status(200).json({ success: true, count, events: eventsWithAttendeeCount });
     } catch (error) {
       next(new CustomError(error.message, 500, "getAllEvents"));
@@ -109,6 +126,7 @@ module.exports = {
         throw new NotFoundError("Group not found");
       }
 
+      // Get all events of group with their group and attendees
       const events = await Event.findAll({
         where: { GroupId: groupId },
         include: [
@@ -123,14 +141,17 @@ module.exports = {
         ],
       });
 
+      // Count events
       const count = events.length;
 
+      // Attach attendee count to each event
       const eventsWithAttendeeCount = events.map((event) => {
         const eventJSON = event.toJSON();
         eventJSON.attendeeCount = event.Users.length;
         return eventJSON;
       });
 
+      // Send response to client
       res.status(200).json({ success: true, count, events: eventsWithAttendeeCount });
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -144,6 +165,8 @@ module.exports = {
   getEvent: async (req, res, next) => {
     try {
       const eventId = req.params.eventId;
+
+      // Get a single event with its group, attendees, and posts
       const event = await Event.findByPk(eventId, {
         include: [
           {
@@ -154,6 +177,10 @@ module.exports = {
             model: User,
             attributes: ["id", "username", "avatar"],
           },
+          {
+            model: Post,
+            attributes: ["id", "content", "createdAt", "updatedAt"],
+          },
         ],
       });
 
@@ -162,9 +189,11 @@ module.exports = {
         throw new NotFoundError("Event not found");
       }
 
+      // Attach attendee count to the event
       const eventJSON = event.toJSON();
       eventJSON.attendeeCount = event.Users.length;
 
+      // Send response to client
       res.status(200).json({ success: true, event: eventJSON });
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -179,7 +208,7 @@ module.exports = {
     try {
       if (req.isOrganizer) {
         // Validate the request body
-        const { err, value } = updateEventSchema.validate(req.body);
+        const { err, value } = eventSchema.validate(req.body);
         if (err) {
           let errorMessage = err.details[0].message;
           errorMessage = errorMessage.replace(/\"/g, "");

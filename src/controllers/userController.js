@@ -184,7 +184,7 @@ module.exports = {
       req.authCheck.online = false;
       const { password, email, ...rest } = req.authCheck.dataValues;
 
-      res.status(200).json({ success: true, message: `User ${rest.username} logged out`, user: rest });
+      res.status(200).json({ success: true, message: `User ${rest.username} logged out`, user: null });
     } catch (err) {
       if (err instanceof UnauthorizedError || err instanceof DatabaseError) {
         next(err);

@@ -22,12 +22,12 @@ const { tokenCheck } = require("../middleware/verify");
 
 // Define the user routes
 
+router.post("/", hashPassword, signup);
+router.post("/login", validate, findUser, comparePassword, login);
+
 router.get("/", getAllUsers);
 router.get("/verify", tokenCheck, login);
 router.get("/:userId", getUser);
-
-router.post("/", hashPassword, signup);
-router.post("/login", validate, findUser, comparePassword, login);
 
 router.put("/logout", tokenCheck, logout);
 router.put("/", tokenCheck, compareAndUpdateUser, sendUpdatedUser);

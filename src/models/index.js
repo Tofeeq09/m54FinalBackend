@@ -19,10 +19,6 @@ Group.belongsToMany(User, { through: GroupUser });
 GroupUser.belongsTo(Group);
 GroupUser.belongsTo(User);
 
-// User and Group are associated through BannedUser
-User.belongsToMany(Group, { through: BannedUser });
-Group.belongsToMany(User, { through: BannedUser });
-
 // Event depends on User and Group, with EventUser as a through table
 User.belongsToMany(Event, { through: EventUser });
 Event.belongsToMany(User, { through: EventUser });

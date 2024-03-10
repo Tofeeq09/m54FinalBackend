@@ -253,12 +253,7 @@ module.exports = {
         throw new NotFoundError("Group not found or user not in group", "adminCheck");
       }
 
-      // Check if user is an admin
-      if (groupUser.role !== "admin") {
-        throw new ForbiddenError("User is not an admin", "adminCheck");
-      }
-
-      // Attach the sequelize group object to req object & set isAdmin to true
+      // Attach sequelize group object to req object & set isAdmin to true
       req.group = groupUser.Group;
       req.isAdmin = true;
       next();
