@@ -6,36 +6,57 @@ const Group = require("./Group");
 const Event = require("./Event");
 const Post = require("./Post");
 const Comment = require("./Comment");
+const GroupUser = require("./GroupUser");
+const EventUser = require("./EventUser");
+const Friendship = require("./Friendship");
 
-User.belongsToMany(Group, { through: "GroupUser" }); // A User can belong to many Groups
-Group.belongsToMany(User, { through: "GroupUser" }); // A Group can belong to many Users
+// User and Group are independent, with GroupUser as a through table
+User.belongsToMany(Group, { through: GroupUser });
+Group.belongsToMany(User, { through: GroupUser });
 
-User.belongsToMany(Event, { through: "EventUser" }); // A User can belong to many Events
-Event.belongsToMany(User, { through: "EventUser" }); // An Event can belong to many Users
+// Direct associations between GroupUser and Group, User
+GroupUser.belongsTo(Group);
+GroupUser.belongsTo(User);
 
-Group.hasMany(Event); // A Group can have many Events
-Event.belongsTo(Group); // An Event belongs to a Group
+// Event depends on User and Group, with EventUser as a through table
+User.belongsToMany(Event, { through: EventUser });
+Event.belongsToMany(User, { through: EventUser });
 
-User.hasMany(Post); // A User can have many Posts
-Post.belongsTo(User); // A Post belongs to a User
+// Direct associations between EventUser and Event, User
+EventUser.belongsTo(User);
+EventUser.belongsTo(Event);
 
-Group.hasMany(Post); // A Group can have many Posts
-Post.belongsTo(Group); // A Post belongs to a Group
+Group.hasMany(Event);
+Event.belongsTo(Group);
 
-Event.hasMany(Post); // An Event can have many Posts
-Post.belongsTo(Event); // A Post belongs to an Event
+// Post depends on User, Group, and Event
+User.hasMany(Post);
+Post.belongsTo(User);
 
-User.hasMany(Comment); // A User can have many Comments
-Comment.belongsTo(User); // A Comment belongs to a User
+Group.hasMany(Post);
+Post.belongsTo(Group);
 
-Post.hasMany(Comment); // A Post can have many Comments
-Comment.belongsTo(Post); // A Comment belongs to a Post
+Event.hasMany(Post);
+Post.belongsTo(Event);
+
+// Comment depends on User and Post
+User.hasMany(Comment);
+Comment.belongsTo(User);
+
+Post.hasMany(Comment);
+Comment.belongsTo(Post);
+
+// User has many friends through Friendship
+User.belongsToMany(User, { as: "Friends", through: Friendship, foreignKey: "userId", otherKey: "friendId" });
 
 // Export the models
 module.exports = {
   User,
   Group,
+  GroupUser,
   Event,
+  EventUser,
   Post,
   Comment,
+  Friendship,
 };

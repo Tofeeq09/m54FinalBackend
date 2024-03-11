@@ -2,7 +2,7 @@
 
 // Import the required modules
 const { DataTypes } = require("sequelize");
-const sequelize = require("../db/connection");
+const { sequelize } = require("../db/connection");
 
 // Define Event model
 const Event = sequelize.define("Event", {

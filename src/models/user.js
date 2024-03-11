@@ -2,7 +2,7 @@
 
 // Import the required modules
 const { DataTypes } = require("sequelize");
-const sequelize = require("../db/connection");
+const { sequelize } = require("../db/connection");
 
 // Define User model
 const User = sequelize.define("User", {
@@ -14,6 +14,7 @@ const User = sequelize.define("User", {
   username: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true,
   },
   email: {
     type: DataTypes.STRING,
@@ -30,6 +31,13 @@ const User = sequelize.define("User", {
   online: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
+    // set(value) {
+    //   if (!value) {
+    //     this.setDataValue("online", false);
+    //   } else {
+    //     this.setDataValue("online", value);
+    //   }
+    // },
   },
 });
 

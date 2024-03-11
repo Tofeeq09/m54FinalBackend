@@ -1,25 +1,48 @@
 // Path: src/server.js
 
 require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const sequelize = require("./db/connection");
+const express = require("express"); // https://expressjs.com/en/resources/middleware.html
+const cors = require("cors"); // https://www.npmjs.com/package/cors
+const cookieParser = require("cookie-parser"); // https://www.npmjs.com/package/cookie-parser
+const morgan = require("morgan"); // https://www.npmjs.com/package/morgan
+const rateLimit = require("express-rate-limit"); // https://www.npmjs.com/package/express-rate-limit
+const { handleError, RateLimitError } = require("./utils/errorHandler");
+const { sequelize } = require("./db/connection");
+const { userRoutes, groupRoutes, eventRoutes, postRoutes } = require("./routes");
 const models = require("./models");
-const { handleError } = require("./utils/errorHandler");
-const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 const port = process.env.PORT || 5001;
+
 const tableNames = Object.values(models).map((model) => model.tableName);
 const tableNamesString = tableNames.join(", ");
-0;
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per windowMs
+  handler: function (req, res, next) {
+    next(new RateLimitError("Too many requests", "RateLimit"));
+  },
+});
+
 app.use(cors());
 app.use(express.json());
-
+app.use(cookieParser());
+app.use(morgan("dev"));
+app.use(limiter);
 app.use("/api/users", userRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/posts", postRoutes);
 
 app.get("/health", (req, res) => {
-  res.status(200).json({ message: "Server is running" });
+  res.status(200).json({ message: "API is live" });
+  return;
+});
+
+app.get("/api/validTopics", (req, res) => {
+  const validTopics = ["topic1", "topic2", "topic3", "topic4", "topic5"];
+  res.json(validTopics);
 });
 
 const syncDatabase = async () => {
