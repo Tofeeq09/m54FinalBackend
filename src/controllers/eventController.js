@@ -20,7 +20,9 @@ const {
 const eventSchema = Joi.object({
   name: Joi.string().required(),
   description: Joi.string().required(),
-  date: Joi.date().required(),
+  date: Joi.date().min("now").required().messages({
+    "date.min": "Date cannot be in the past",
+  }),
   time: Joi.string().pattern(new RegExp("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$")).required().messages({
     "string.pattern.base": "Time must be in the format HH:MM",
   }),

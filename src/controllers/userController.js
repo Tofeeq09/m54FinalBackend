@@ -463,7 +463,7 @@ module.exports = {
             {
               model: User,
               where: { id: userId },
-              attributes: [],
+              attributes: ["username", "avatar"],
               through: { attributes: [] },
             },
             {
