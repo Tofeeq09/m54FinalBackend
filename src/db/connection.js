@@ -4,15 +4,15 @@ require("dotenv").config();
 const { Sequelize } = require("sequelize");
 const makeRunnable = require("make-runnable/custom");
 
-// const sequelize = new Sequelize(process.env.POSTGRES_URI, {
-//   dialect: "postgres",
-// });
-
-const sequelize = new Sequelize(process.env.POSTGRES_DB, process.env.POSTGRES_USER, process.env.POSTGRES_PASSWORD, {
-  host: "localhost",
+const sequelize = new Sequelize(process.env.POSTGRES_URI, {
   dialect: "postgres",
-  port: 5432,
 });
+
+// const sequelize = new Sequelize(process.env.POSTGRES_DB, process.env.POSTGRES_USER, process.env.POSTGRES_PASSWORD, {
+//   host: "localhost",
+//   dialect: "postgres",
+//   port: 5432,
+// });
 
 const testConnection = async () => {
   try {

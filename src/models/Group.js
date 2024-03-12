@@ -35,6 +35,10 @@ const Group = sequelize.define("Group", {
   },
   privacy_settings: {
     type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isIn: [["public", "private"]],
+    },
   },
 });
 
