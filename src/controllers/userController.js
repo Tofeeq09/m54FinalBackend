@@ -459,11 +459,10 @@ module.exports = {
       let result;
       try {
         result = await Event.findAndCountAll({
+          where: { "$Users.id$": userId },
           include: [
             {
               model: User,
-              where: { id: userId },
-              attributes: ["username", "avatar"],
               through: { attributes: [] },
             },
             {
