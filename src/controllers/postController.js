@@ -52,7 +52,7 @@ module.exports = {
         throw new ValidationError(`User ${user.username} is not a member of group ${group.name}`, "createPost");
       }
 
-      // If eventId is provided, check if event exists and user is member of event
+      // If eventId provided, check if event exists and user member of event
       let event;
       if (eventId) {
         event = await Event.findByPk(eventId);
