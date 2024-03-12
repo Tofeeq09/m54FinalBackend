@@ -24,10 +24,10 @@ const Group = sequelize.define("Group", {
     validate: {
       areValidTopics(value) {
         if (!value) return;
-        const validTopics = ["topic1", "topic2", "topic3", "topic4", "topic5"];
+        const validTopics = ["Gaming", "Comics/Manga", "Movies & TV", "Coding", "TTRPG"];
         for (let topic of value) {
           if (!validTopics.includes(topic)) {
-            throw new Error("Topics must be one of: 'topic1', 'topic2', 'topic3', 'topic4', 'topic5'");
+            throw new Error(`Topics must be one of: "Gaming", "Comics/Manga", "Movies & TV", "Coding", "TTRPG"`);
           }
         }
       },

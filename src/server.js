@@ -41,7 +41,7 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/api/validTopics", (req, res) => {
-  const validTopics = ["topic1", "topic2", "topic3", "topic4", "topic5"];
+  const validTopics = ["Gaming", "Comics/Manga", "Movies & TV", "Coding", "TTRPG"];
   res.json(validTopics);
 });
 
