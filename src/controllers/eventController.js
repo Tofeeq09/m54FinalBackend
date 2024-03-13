@@ -182,6 +182,12 @@ module.exports = {
           {
             model: Post,
             attributes: ["id", "content", "createdAt", "updatedAt"],
+            include: [
+              {
+                model: User,
+                attributes: ["id", "username", "avatar"],
+              },
+            ],
           },
         ],
       });
