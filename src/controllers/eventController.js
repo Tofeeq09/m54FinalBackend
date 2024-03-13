@@ -23,9 +23,12 @@ const eventSchema = Joi.object({
   date: Joi.date().min("now").required().messages({
     "date.min": "Date cannot be in the past",
   }),
-  time: Joi.string().pattern(new RegExp("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$")).required().messages({
-    "string.pattern.base": "Time must be in the format HH:MM",
-  }),
+  time: Joi.string()
+    .pattern(new RegExp("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"))
+    .required()
+    .messages({
+      "string.pattern.base": "Time must be in the format HH:MM",
+    }),
   location: Joi.string().required(),
 });
 
@@ -40,7 +43,10 @@ module.exports = {
       if (error) {
         let errorMessage = error.details[0].message;
         errorMessage = errorMessage.replace(/\"/g, "");
-        throw new ValidationError(`Validation failed: ${errorMessage}`, "createEvent");
+        throw new ValidationError(
+          `Validation failed: ${errorMessage}`,
+          "createEvent"
+        );
       }
 
       // Extract required fields from request body
@@ -54,7 +60,10 @@ module.exports = {
       // Check if user is a member of group
       const isMember = await group.hasUser(user);
       if (!isMember) {
-        throw new ValidationError(`User ${user.username} is not a member of group ${group.name}`, "createEvent");
+        throw new ValidationError(
+          `User ${user.username} is not a member of group ${group.name}`,
+          "createEvent"
+        );
       }
 
       // Create event
@@ -74,10 +83,32 @@ module.exports = {
         role: "organizer",
       });
 
+      // Fetch the event again to include the organizer
+      const createdEvent = await Event.findByPk(event.id, {
+        include: [
+          {
+            model: User,
+            attributes: ["id", "username", "avatar"],
+          },
+        ],
+      });
+
+      // Attach attendee count to the event
+      const eventJSON = createdEvent.toJSON();
+      eventJSON.attendeeCount = createdEvent.Users.length;
+
       // Send response to client
-      res.status(201).json({ success: true, message: "Event created successfully", event });
+      res.status(201).json({
+        success: true,
+        message: "Event created successfully",
+        event: eventJSON,
+      });
     } catch (error) {
-      if (error instanceof NotFoundError || error instanceof ValidationError || error instanceof DatabaseError) {
+      if (
+        error instanceof NotFoundError ||
+        error instanceof ValidationError ||
+        error instanceof DatabaseError
+      ) {
         next(error);
         return;
       }
@@ -112,7 +143,9 @@ module.exports = {
       });
 
       // Send response to client
-      res.status(200).json({ success: true, count, events: eventsWithAttendeeCount });
+      res
+        .status(200)
+        .json({ success: true, count, events: eventsWithAttendeeCount });
     } catch (error) {
       next(new CustomError(error.message, 500, "getAllEvents"));
     }
@@ -154,7 +187,9 @@ module.exports = {
       });
 
       // Send response to client
-      res.status(200).json({ success: true, count, events: eventsWithAttendeeCount });
+      res
+        .status(200)
+        .json({ success: true, count, events: eventsWithAttendeeCount });
     } catch (error) {
       if (error instanceof NotFoundError) {
         next(error);
@@ -220,7 +255,10 @@ module.exports = {
         if (err) {
           let errorMessage = err.details[0].message;
           errorMessage = errorMessage.replace(/\"/g, "");
-          throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
+          throw new ValidationError(
+            `Validation failed: ${errorMessage}`,
+            "signup"
+          );
         }
 
         const eventId = req.params.eventId;
@@ -272,7 +310,9 @@ module.exports = {
         }
 
         // Send a success message to the client
-        res.status(200).json({ success: true, message: `Event cancelled successfully` });
+        res
+          .status(200)
+          .json({ success: true, message: `Event cancelled successfully` });
         return;
       }
 
@@ -286,11 +326,17 @@ module.exports = {
         }
 
         // Send a success message to the client
-        res.status(200).json({ success: true, message: `Event ${req.event.name} cancelled successfully` });
+        res.status(200).json({
+          success: true,
+          message: `Event ${req.event.name} cancelled successfully`,
+        });
         return;
       }
 
-      throw new ForbiddenError("User is not an admin or an organizer", "deleteEvent");
+      throw new ForbiddenError(
+        "User is not an admin or an organizer",
+        "deleteEvent"
+      );
     } catch (err) {
       if (err instanceof NotFoundError || err instanceof ForbiddenError) {
         next(err);
