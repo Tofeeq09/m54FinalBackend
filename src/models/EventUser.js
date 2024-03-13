@@ -5,15 +5,9 @@ const { sequelize } = require("../db/connection");
 
 const EventUser = sequelize.define("EventUser", {
   role: {
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM("organizer", "attendee"),
     allowNull: false,
     defaultValue: "attendee",
-    validate: {
-      isIn: {
-        args: [["organizer", "attendee"]],
-        msg: "Role must be one of: 'organizer', 'attendee'",
-      },
-    },
   },
 });
 

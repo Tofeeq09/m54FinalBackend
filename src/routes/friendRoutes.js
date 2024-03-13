@@ -5,15 +5,24 @@ const router = require("express").Router();
 
 const { tokenCheck } = require("../middleware/verify");
 const {
-  addFriend,
-  removeFriend,
-  getUserFriends,
+  sendFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  getAllFriends,
+  getFriendRequests,
+  unfriend,
 } = require("../controllers/friendController");
 
 // Define the friend routes
-router.post("/:friendId", tokenCheck, addFriend);
-router.delete("/:friendId", tokenCheck, removeFriend);
-router.get("/", tokenCheck, getUserFriends);
+router.post("/:friendId", tokenCheck, sendFriendRequest);
+
+router.put("/:friendId/accept", tokenCheck, acceptFriendRequest);
+router.put("/:friendId/reject", tokenCheck, rejectFriendRequest);
+
+router.get("/", tokenCheck, getAllFriends);
+router.get("/requests", tokenCheck, getFriendRequests);
+
+router.delete("/:friendId", tokenCheck, unfriend);
 
 // Export the friend routes
 module.exports = router;

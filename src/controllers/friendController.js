@@ -22,120 +22,199 @@ const schema = Joi.object({
 });
 
 module.exports = {
-  addFriend: async (req, res, next) => {
+  sendFriendRequest: async (req, res, next) => {
     try {
-      const { error } = schema.validate(req.params);
-      if (error) {
-        let errorMessage = error.details[0].message;
-        errorMessage = errorMessage.replace(/\"/g, "");
-        throw new ValidationError(
-          `Validation failed: ${errorMessage}`,
-          "addFriend"
-        );
+      const user = req.authCheck;
+      const friendId = req.params.friendId;
+
+      // Check if friend exists
+      const friend = await User.findByPk(friendId);
+      if (!friend) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
       }
 
-      const { friendId } = req.params;
-      const userId = req.authCheck.id;
-
-      const [friendship, created] = await Friendship.findOrCreate({
+      // Check if friend request already exists
+      const existingRequest = await Friendship.findOne({
         where: {
-          userId,
-          friendId,
+          userId: user.id,
+          friendId: friend.id,
         },
       });
-
-      if (!created) {
-        throw new ValidationError("Friendship already exists", "addFriend");
+      if (existingRequest) {
+        return res.status(400).json({
+          success: false,
+          message: "Friend request already sent",
+        });
       }
 
-      res.status(201).json({
+      // Create friend request
+      await Friendship.create({
+        userId: user.id,
+        friendId: friend.id,
+        status: "pending",
+      });
+
+      res.status(200).json({
         success: true,
-        message: "Friend added successfully",
-        friendship,
+        message: "Friend request sent successfully",
       });
     } catch (error) {
-      if (error instanceof ValidationError) {
-        next(error);
-        return;
-      }
-      next(new CustomError(error.message, 500, "addFriend"));
+      next(new CustomError(error.message, 500, "sendFriendRequest"));
     }
   },
 
-  removeFriend: async (req, res, next) => {
+  acceptFriendRequest: async (req, res, next) => {
     try {
-      const { error } = schema.validate(req.params);
-      if (error) {
-        let errorMessage = error.details[0].message;
-        errorMessage = errorMessage.replace(/\"/g, "");
-        throw new ValidationError(
-          `Validation failed: ${errorMessage}`,
-          "removeFriend"
-        );
-      }
+      const user = req.authCheck;
+      const friendId = req.params.friendId;
 
-      const { friendId } = req.params;
-      const userId = req.authCheck.id;
-
-      const friendship = await Friendship.findOne({
+      // Check if friend request exists
+      const friendRequest = await Friendship.findOne({
         where: {
-          userId,
-          friendId,
+          userId: friendId,
+          friendId: user.id,
+          status: "pending",
         },
       });
-
-      if (!friendship) {
-        throw new NotFoundError("Friendship does not exist", "removeFriend");
+      if (!friendRequest) {
+        return res.status(404).json({
+          success: false,
+          message: "Friend request not found",
+        });
       }
 
+      // Update friend request status to 'accepted'
+      await friendRequest.update({ status: "accepted" });
+
+      res.status(200).json({
+        success: true,
+        message: "Friend request accepted successfully",
+      });
+    } catch (error) {
+      next(new CustomError(error.message, 500, "acceptFriendRequest"));
+    }
+  },
+
+  rejectFriendRequest: async (req, res, next) => {
+    try {
+      const user = req.authCheck;
+      const friendId = req.params.friendId;
+
+      // Check if friend request exists
+      const friendRequest = await Friendship.findOne({
+        where: {
+          userId: friendId,
+          friendId: user.id,
+          status: "pending",
+        },
+      });
+      if (!friendRequest) {
+        return res.status(404).json({
+          success: false,
+          message: "Friend request not found",
+        });
+      }
+
+      // Update friend request status to 'rejected'
+      await friendRequest.update({ status: "rejected" });
+
+      res.status(200).json({
+        success: true,
+        message: "Friend request rejected successfully",
+      });
+    } catch (error) {
+      next(new CustomError(error.message, 500, "rejectFriendRequest"));
+    }
+  },
+
+  getAllFriends: async (req, res, next) => {
+    try {
+      const user = req.authCheck;
+
+      // Get all friends
+      const friends = await Friendship.findAll({
+        where: {
+          userId: user.id,
+          status: "accepted",
+        },
+        include: [
+          {
+            model: User,
+            as: "Friends",
+            attributes: ["id", "username", "avatar"],
+          },
+        ],
+      });
+
+      res.status(200).json({
+        success: true,
+        data: friends,
+      });
+    } catch (error) {
+      next(new CustomError(error.message, 500, "getAllFriends"));
+    }
+  },
+
+  getFriendRequests: async (req, res, next) => {
+    try {
+      const user = req.authCheck;
+
+      // Get all pending friend requests
+      const friendRequests = await Friendship.findAll({
+        where: {
+          friendId: user.id,
+          status: "pending",
+        },
+        include: [
+          {
+            model: User,
+            as: "User",
+            attributes: ["id", "username", "avatar"],
+          },
+        ],
+      });
+
+      res.status(200).json({
+        success: true,
+        data: friendRequests,
+      });
+    } catch (error) {
+      next(new CustomError(error.message, 500, "getFriendRequests"));
+    }
+  },
+
+  unfriend: async (req, res, next) => {
+    try {
+      const user = req.authCheck;
+      const friendId = req.params.friendId;
+
+      // Check if friend relationship exists
+      const friendship = await Friendship.findOne({
+        where: {
+          userId: user.id,
+          friendId: friendId,
+          status: "accepted",
+        },
+      });
+      if (!friendship) {
+        return res.status(404).json({
+          success: false,
+          message: "Friendship not found",
+        });
+      }
+
+      // Delete friend relationship
       await friendship.destroy();
 
       res.status(200).json({
         success: true,
-        message: "Friendship removed successfully",
+        message: "Unfriended successfully",
       });
     } catch (error) {
-      if (error instanceof ValidationError || error instanceof NotFoundError) {
-        next(error);
-        return;
-      }
-      next(new CustomError(error.message, 500, "removeFriend"));
-    }
-  },
-
-  getUserFriends: async (req, res, next) => {
-    try {
-      if (!req.authCheck) {
-        throw new UnauthorizedError("Unauthorized", "getUserFriends");
-      }
-
-      const userId = req.authCheck.id;
-
-      const user = await User.findByPk(userId);
-      if (!user) {
-        throw new NotFoundError("User not found", "getUserFriends");
-      }
-
-      const friends = await user.getFriends({
-        attributes: { exclude: ["email", "password"] },
-      });
-
-      res.status(200).json({
-        success: true,
-        message: "Friends fetched successfully",
-        friends,
-      });
-    } catch (error) {
-      if (
-        error instanceof NotFoundError ||
-        error instanceof UnauthorizedError
-      ) {
-        next(error);
-        return;
-      }
-      next(new CustomError(error.message, 500, "getUserFriends"));
+      next(new CustomError(error.message, 500, "unfriend"));
     }
   },
 };
-
-//test

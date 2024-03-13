@@ -5,6 +5,7 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require("../db/connection");
 
 // Define Friendship model
+// Define Friendship model
 const Friendship = sequelize.define(
   "Friendship",
   {
@@ -17,6 +18,11 @@ const Friendship = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       primaryKey: true,
+    },
+    status: {
+      type: DataTypes.ENUM("pending", "accepted", "rejected"),
+      allowNull: false,
+      defaultValue: "pending",
     },
   },
   {

@@ -5,15 +5,9 @@ const { sequelize } = require("../db/connection");
 
 const GroupUser = sequelize.define("GroupUser", {
   role: {
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM("member", "admin"),
     allowNull: false,
     defaultValue: "member",
-    validate: {
-      isIn: {
-        args: [["member", "admin"]],
-        msg: "Role must be either 'member' or 'admin'",
-      },
-    },
   },
 });
 
