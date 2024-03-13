@@ -18,7 +18,14 @@ const {
   RateLimitError,
   NotImplementedError,
 } = require("../utils/errorHandler");
-const { Group, GroupUser, Event, EventUser, Post, Comment } = require("../models");
+const {
+  Group,
+  GroupUser,
+  Event,
+  EventUser,
+  Post,
+  Comment,
+} = require("../models");
 
 const postSchema = Joi.object({
   username: Joi.string().required(),
@@ -34,16 +41,24 @@ module.exports = {
       if (err) {
         let errorMessage = err.details[0].message;
         errorMessage = errorMessage.replace(/\"/g, "");
-        throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
+        throw new ValidationError(
+          `Validation failed: ${errorMessage}`,
+          "signup"
+        );
       }
 
       // Extract the required fields from the request body
       const { username, email, password } = value;
 
       // Check if the username or email already exists
-      const userExists = await User.findOne({ where: { [Op.or]: [{ username }, { email }] } });
+      const userExists = await User.findOne({
+        where: { [Op.or]: [{ username }, { email }] },
+      });
       if (userExists) {
-        throw new ValidationError("Validation failed: Username or Email already registered", "signup");
+        throw new ValidationError(
+          "Validation failed: Username or Email already registered",
+          "signup"
+        );
       }
 
       // Create a new user with a default avatar
@@ -64,7 +79,9 @@ module.exports = {
       // Generate a JWT token for the user
       let token;
       try {
-        token = jwt.sign({ id: user.id }, process.env.SECRET, { expiresIn: "1h" });
+        token = jwt.sign({ id: user.id }, process.env.SECRET, {
+          expiresIn: "1h",
+        });
       } catch (err) {
         throw new JwtError(err.message, "signup");
       }
@@ -74,10 +91,18 @@ module.exports = {
       rest.authToken = token;
 
       // Send the response to the client
-      res.status(201).json({ success: true, message: "User created successfully", user: rest });
+      res.status(201).json({
+        success: true,
+        message: "User created successfully",
+        user: rest,
+      });
       return;
     } catch (err) {
-      if (err instanceof ValidationError || err instanceof DatabaseError || err instanceof JwtError) {
+      if (
+        err instanceof ValidationError ||
+        err instanceof DatabaseError ||
+        err instanceof JwtError
+      ) {
         next(err);
         return;
       }
@@ -93,7 +118,9 @@ module.exports = {
         const { password, email, ...rest } = req.authCheck.dataValues;
 
         // Send the response to the client
-        res.status(200).json({ success: true, message: "User authenticated", user: rest });
+        res
+          .status(200)
+          .json({ success: true, message: "User authenticated", user: rest });
         return;
       }
 
@@ -102,7 +129,9 @@ module.exports = {
       // Generate a JWT token for the user
       let token;
       try {
-        token = jwt.sign({ id: req.user.id }, process.env.SECRET, { expiresIn: "8h" });
+        token = jwt.sign({ id: req.user.id }, process.env.SECRET, {
+          expiresIn: "8h",
+        });
       } catch (err) {
         throw new JwtError(err.message, "login");
       }
@@ -118,7 +147,9 @@ module.exports = {
       rest.authToken = token;
 
       // Send the response to the client
-      res.status(201).json({ success: true, message: "Login successful", user: rest });
+      res
+        .status(201)
+        .json({ success: true, message: "Login successful", user: rest });
       return;
     } catch (err) {
       if (err instanceof JwtError || err instanceof DatabaseError) {
@@ -135,7 +166,10 @@ module.exports = {
       const userId = req.authCheck.id;
 
       // Execute both queries concurrently
-      const [user, group] = await Promise.all([User.findByPk(userId), Group.findByPk(groupId)]);
+      const [user, group] = await Promise.all([
+        User.findByPk(userId),
+        Group.findByPk(groupId),
+      ]);
 
       // Check if the group exists
       if (!group) {
@@ -145,7 +179,10 @@ module.exports = {
       // Check if the user is already a member of the group
       const isMember = await group.hasUser(user);
       if (isMember) {
-        throw new ValidationError(`User ${user.username} is already a member of group ${group.name}`, "joinGroup");
+        throw new ValidationError(
+          `User ${user.username} is already a member of group ${group.name}`,
+          "joinGroup"
+        );
       }
 
       // Add the user to the group as a member
@@ -156,9 +193,15 @@ module.exports = {
       }
 
       // Send the response to the client
-      res.status(200).json({ message: `User ${user.username} successfully added to group ${group.name}` });
+      res.status(200).json({
+        message: `User ${user.username} successfully added to group ${group.name}`,
+      });
     } catch (err) {
-      if (err instanceof NotFoundError || err instanceof ValidationError || err instanceof DatabaseError) {
+      if (
+        err instanceof NotFoundError ||
+        err instanceof ValidationError ||
+        err instanceof DatabaseError
+      ) {
         next(err);
         return;
       }
@@ -175,7 +218,10 @@ module.exports = {
 
       // Update the user's online status
       try {
-        await User.update({ online: false }, { where: { id: req.authCheck.id } });
+        await User.update(
+          { online: false },
+          { where: { id: req.authCheck.id } }
+        );
       } catch (err) {
         throw new DatabaseError(err.message, "logout");
       }
@@ -184,7 +230,11 @@ module.exports = {
       req.authCheck.online = false;
       const { password, email, ...rest } = req.authCheck.dataValues;
 
-      res.status(200).json({ success: true, message: `User ${rest.username} logged out`, user: null });
+      res.status(200).json({
+        success: true,
+        message: `User ${rest.username} logged out`,
+        user: null,
+      });
     } catch (err) {
       if (err instanceof UnauthorizedError || err instanceof DatabaseError) {
         next(err);
@@ -198,7 +248,10 @@ module.exports = {
     try {
       // Check if tokenCheck middleware was executed
       if (!req.authCheck) {
-        throw new UnauthorizedError("User not authenticated", "sendUpdatedUser");
+        throw new UnauthorizedError(
+          "User not authenticated",
+          "sendUpdatedUser"
+        );
       }
 
       if (req.isChanges === false) {
@@ -225,7 +278,9 @@ module.exports = {
       }
 
       // Send the response to the client
-      res.status(200).json({ success: true, message: "User updated", user: rest });
+      res
+        .status(200)
+        .json({ success: true, message: "User updated", user: rest });
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         next(err);
@@ -267,7 +322,9 @@ module.exports = {
       }
 
       // Send the response to the client
-      res.status(200).json({ success: true, count: result.count, users: updatedUsers });
+      res
+        .status(200)
+        .json({ success: true, count: result.count, users: updatedUsers });
       return;
     } catch (err) {
       if (err instanceof DatabaseError || err instanceof NotFoundError) {
@@ -299,7 +356,11 @@ module.exports = {
       // Send the response to the client
       res.status(200).json({ success: true, user: rest });
     } catch (err) {
-      if (err instanceof ValidationError || err instanceof DatabaseError || err instanceof NotFoundError) {
+      if (
+        err instanceof ValidationError ||
+        err instanceof DatabaseError ||
+        err instanceof NotFoundError
+      ) {
         next(err);
         return;
       }
@@ -413,12 +474,18 @@ module.exports = {
       // Check if the user is an admin of the group
       const groupUser = group.Users ? group.Users[0] : null;
       if (groupUser && groupUser.GroupUser.role === "admin") {
-        throw new ValidationError(`Admin user ${user.username} cannot leave group ${group.name}`, "leaveGroup");
+        throw new ValidationError(
+          `Admin user ${user.username} cannot leave group ${group.name}`,
+          "leaveGroup"
+        );
       }
 
       // Check if the user is a member of the group
       if (!groupUser) {
-        throw new ValidationError(`User ${user.username} is not a member of group ${group.name}`, "leaveGroup");
+        throw new ValidationError(
+          `User ${user.username} is not a member of group ${group.name}`,
+          "leaveGroup"
+        );
       }
 
       // Remove the user from the group
@@ -429,9 +496,15 @@ module.exports = {
       }
 
       // Send the response to the client
-      res.status(200).json({ message: `User ${user.username} successfully removed from group ${group.name}` });
+      res.status(200).json({
+        message: `User ${user.username} successfully removed from group ${group.name}`,
+      });
     } catch (err) {
-      if (err instanceof NotFoundError || err instanceof ValidationError || err instanceof DatabaseError) {
+      if (
+        err instanceof NotFoundError ||
+        err instanceof ValidationError ||
+        err instanceof DatabaseError
+      ) {
         next(err);
         return;
       }
@@ -484,8 +557,12 @@ module.exports = {
       });
 
       const currentDate = new Date();
-      const pastEvents = events.filter((event) => new Date(event.date) < currentDate);
-      const upcomingEvents = events.filter((event) => new Date(event.date) >= currentDate);
+      const pastEvents = events.filter(
+        (event) => new Date(event.date) < currentDate
+      );
+      const upcomingEvents = events.filter(
+        (event) => new Date(event.date) >= currentDate
+      );
 
       const response = {
         count: result.count,
@@ -510,7 +587,10 @@ module.exports = {
       const userId = req.authCheck.id;
 
       // Execute both queries concurrently
-      const [user, event] = await Promise.all([User.findByPk(userId), Event.findByPk(eventId)]);
+      const [user, event] = await Promise.all([
+        User.findByPk(userId),
+        Event.findByPk(eventId),
+      ]);
 
       // Check if the event exists
       if (!event) {
@@ -520,7 +600,10 @@ module.exports = {
       // Check if the user is already attending the event
       const isAttending = await event.hasUser(user);
       if (isAttending) {
-        throw new ValidationError(`User ${user.username} is already attending event ${event.name}`, "attendEvent");
+        throw new ValidationError(
+          `User ${user.username} is already attending event ${event.name}`,
+          "attendEvent"
+        );
       }
 
       // Schedule the user to attend the event
@@ -531,9 +614,15 @@ module.exports = {
       }
 
       // Send the response to the client
-      res.status(200).json({ message: `User ${user.username} successfully scheduled to attend event ${event.name}` });
+      res.status(200).json({
+        message: `User ${user.username} successfully scheduled to attend event ${event.name}`,
+      });
     } catch (err) {
-      if (err instanceof NotFoundError || err instanceof ValidationError || err instanceof DatabaseError) {
+      if (
+        err instanceof NotFoundError ||
+        err instanceof ValidationError ||
+        err instanceof DatabaseError
+      ) {
         next(err);
         return;
       }
@@ -545,7 +634,10 @@ module.exports = {
     try {
       // Check if tokenCheck middleware was executed
       if (!req.authCheck) {
-        throw new ValidationError("User not authenticated", "cancelEventAttendance");
+        throw new ValidationError(
+          "User not authenticated",
+          "cancelEventAttendance"
+        );
       }
 
       const eventId = req.params.eventId;
@@ -592,11 +684,15 @@ module.exports = {
       }
 
       // Send the response to the client
-      res
-        .status(200)
-        .json({ message: `User ${user.username} successfully canceled attendance to event ${event.name}` });
+      res.status(200).json({
+        message: `User ${user.username} successfully canceled attendance to event ${event.name}`,
+      });
     } catch (err) {
-      if (err instanceof NotFoundError || err instanceof ValidationError || err instanceof DatabaseError) {
+      if (
+        err instanceof NotFoundError ||
+        err instanceof ValidationError ||
+        err instanceof DatabaseError
+      ) {
         next(err);
         return;
       }
