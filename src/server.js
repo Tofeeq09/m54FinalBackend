@@ -53,7 +53,7 @@ app.get("/api/validTopics", (req, res) => {
     "Comics/Manga",
     "Movies & TV",
     "Coding",
-    "TTRPG",
+    "Sports",
   ];
   res.json(validTopics);
 });
