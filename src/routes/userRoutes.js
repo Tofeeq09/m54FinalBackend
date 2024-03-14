@@ -7,7 +7,7 @@ const {
   login,
   logout,
   getAllUsers,
-  getUser,
+  getUserEmail,
   sendUpdatedUser,
   deleteUser,
   getUserGroups,
@@ -16,8 +16,15 @@ const {
   getUserEvents,
   attendEvent,
   cancelEventAttendance,
+  getUserDetailsByUsername,
 } = require("../controllers/userController");
-const { hashPassword, validate, findUser, compareAndUpdateUser, comparePassword } = require("../middleware/auth");
+const {
+  hashPassword,
+  validate,
+  findUser,
+  compareAndUpdateUser,
+  comparePassword,
+} = require("../middleware/auth");
 const { tokenCheck } = require("../middleware/verify");
 
 // Define the user routes
@@ -27,7 +34,8 @@ router.post("/login", validate, findUser, comparePassword, login);
 
 router.get("/", getAllUsers);
 router.get("/verify", tokenCheck, login);
-router.get("/:userId", getUser);
+router.get("/username/:username", getUserDetailsByUsername);
+router.get("/private", tokenCheck, getUserEmail);
 
 router.put("/logout", tokenCheck, logout);
 router.put("/", tokenCheck, compareAndUpdateUser, sendUpdatedUser);

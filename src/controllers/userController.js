@@ -335,12 +335,12 @@ module.exports = {
     }
   },
 
-  getUser: async (req, res, next) => {
+  getUserEmail: async (req, res, next) => {
     try {
       // Find the user by the id in the request parameters
       let user;
       try {
-        user = await User.findByPk(req.params.userId);
+        user = await User.findByPk(req.authCheck.id);
       } catch (err) {
         throw new DatabaseError(err.message, "getUser");
       }
@@ -351,7 +351,7 @@ module.exports = {
       }
 
       // Extract sanitized user data
-      const { password, email, ...rest } = user.dataValues;
+      const { password, ...rest } = user.dataValues;
 
       // Send the response to the client
       res.status(200).json({ success: true, user: rest });
@@ -709,10 +709,29 @@ module.exports = {
         attributes: ["id", "username", "avatar"],
         include: [
           { model: Group, through: { attributes: [] } },
-          { model: Event, through: { attributes: [] } },
+          {
+            model: Event,
+            through: { attributes: [] },
+            include: [
+              {
+                model: User,
+                attributes: ["id", "username", "avatar"],
+                through: { attributes: [] },
+              },
+              {
+                model: Group,
+                attributes: ["id", "name"],
+              },
+            ],
+          },
           { model: Post },
         ],
       });
+
+      // Add attendee count for each event
+      for (let event of user.Events) {
+        event.setDataValue("attendeeCount", event.Users.length);
+      }
 
       if (!user) {
         throw new NotFoundError("User not found");
