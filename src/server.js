@@ -8,7 +8,13 @@ const morgan = require("morgan"); // https://www.npmjs.com/package/morgan
 // const rateLimit = require("express-rate-limit"); // https://www.npmjs.com/package/express-rate-limit
 const { handleError, RateLimitError } = require("./utils/errorHandler");
 const { sequelize } = require("./db/connection");
-const { userRoutes, groupRoutes, eventRoutes, postRoutes } = require("./routes");
+const {
+  userRoutes,
+  groupRoutes,
+  eventRoutes,
+  postRoutes,
+  followRoutes,
+} = require("./routes");
 const models = require("./models");
 
 const app = express();
@@ -34,6 +40,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/follow", followRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "API is live" });
@@ -41,7 +48,13 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/api/validTopics", (req, res) => {
-  const validTopics = ["Gaming", "Comics/Manga", "Movies & TV", "Coding", "TTRPG"];
+  const validTopics = [
+    "Gaming",
+    "Comics/Manga",
+    "Movies & TV",
+    "Coding",
+    "TTRPG",
+  ];
   res.json(validTopics);
 });
 

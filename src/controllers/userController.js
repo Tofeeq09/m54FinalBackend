@@ -699,4 +699,32 @@ module.exports = {
       next(new CustomError(err.message, 500, "cancelEventAttendance"));
     }
   },
+
+  getUserDetailsByUsername: async (req, res, next) => {
+    try {
+      const username = req.params.username;
+
+      const user = await User.findOne({
+        where: { username },
+        attributes: ["id", "username", "avatar"],
+        include: [
+          { model: Group, through: { attributes: [] } },
+          { model: Event, through: { attributes: [] } },
+          { model: Post },
+        ],
+      });
+
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
+
+      res.status(200).json(user);
+    } catch (err) {
+      if (err instanceof NotFoundError) {
+        next(err);
+        return;
+      }
+      next(new CustomError(err.message, 500, "getUserDetailsByUsername"));
+    }
+  },
 };
