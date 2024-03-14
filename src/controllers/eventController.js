@@ -212,7 +212,7 @@ module.exports = {
           },
           {
             model: User,
-            attributes: ["id", "username", "avatar"],
+            attributes: ["id", "username", "avatar", "online"],
           },
           {
             model: Post,
@@ -220,7 +220,7 @@ module.exports = {
             include: [
               {
                 model: User,
-                attributes: ["id", "username", "avatar"],
+                attributes: ["id", "username", "avatar", "online"],
               },
             ],
           },
@@ -343,6 +343,40 @@ module.exports = {
         return;
       }
       next(new CustomError(err.message, 500, "deleteEvent"));
+    }
+  },
+
+  checkGroupMembershipFromEvent: async (req, res, next) => {
+    try {
+      const eventId = req.params.eventId;
+      const userId = req.authCheck.id;
+
+      const event = await Event.findByPk(eventId);
+      if (!event) {
+        return res
+          .status(404)
+          .json({ isMember: false, message: "Event not found" });
+      }
+
+      const group = await event.getGroup();
+      if (!group) {
+        return res
+          .status(404)
+          .json({ isMember: false, message: "Group not found" });
+      }
+
+      const isMember = await group.hasUser(userId);
+      if (!isMember) {
+        return res
+          .status(200)
+          .json({ isMember: false, message: "User is not a member of group" });
+      }
+
+      res
+        .status(200)
+        .json({ isMember: true, message: "User is a member of group" });
+    } catch (err) {
+      next(new CustomError(err.message, 500, "checkGroupMembership"));
     }
   },
 };

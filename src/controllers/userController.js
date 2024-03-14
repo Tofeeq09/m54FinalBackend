@@ -317,8 +317,10 @@ module.exports = {
         return rest;
       });
 
-      if (result.count === 0) {
-        throw new NotFoundError("No users found", "getAllUsers");
+      // If no users found and filters were applied, return an empty array
+      if (result.count === 0 && username) {
+        res.status(200).json({ success: true, count: 0, users: [] });
+        return;
       }
 
       // Send the response to the client
@@ -335,12 +337,12 @@ module.exports = {
     }
   },
 
-  getUser: async (req, res, next) => {
+  getUserEmail: async (req, res, next) => {
     try {
       // Find the user by the id in the request parameters
       let user;
       try {
-        user = await User.findByPk(req.params.userId);
+        user = await User.findByPk(req.authCheck.id);
       } catch (err) {
         throw new DatabaseError(err.message, "getUser");
       }
@@ -351,7 +353,7 @@ module.exports = {
       }
 
       // Extract sanitized user data
-      const { password, email, ...rest } = user.dataValues;
+      const { password, ...rest } = user.dataValues;
 
       // Send the response to the client
       res.status(200).json({ success: true, user: rest });
@@ -697,6 +699,70 @@ module.exports = {
         return;
       }
       next(new CustomError(err.message, 500, "cancelEventAttendance"));
+    }
+  },
+
+  getUserDetailsByUsername: async (req, res, next) => {
+    try {
+      const username = req.params.username;
+
+      const user = await User.findOne({
+        where: { username },
+        attributes: ["id", "username", "avatar"],
+        include: [
+          { model: Group, through: { attributes: [] } },
+          {
+            model: Event,
+            through: { attributes: [] },
+            include: [
+              {
+                model: User,
+                attributes: ["id", "username", "avatar"],
+                through: { attributes: [] },
+              },
+              {
+                model: Group,
+                attributes: ["id", "name"],
+              },
+            ],
+          },
+          {
+            model: Post,
+            attributes: ["id", "content", "createdAt", "updatedAt"], // Specify the attributes you want to fetch
+            include: [
+              {
+                model: Group,
+                attributes: ["id", "name"],
+              },
+              {
+                model: Event,
+                attributes: ["id", "name"],
+              },
+              {
+                model: User,
+                attributes: ["id", "username", "avatar"],
+              },
+            ],
+          },
+        ],
+      });
+
+      // Add attendee count for each event
+      for (let event of user.Events) {
+        event.setDataValue("attendeeCount", event.Users.length);
+      }
+
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
+
+      res.status(200).json(user);
+    } catch (err) {
+      if (err instanceof NotFoundError) {
+        next(err);
+        return;
+      }
+      next(new CustomError(err.message, 500, "getUserDetailsByUsername"));
     }
   },
 };

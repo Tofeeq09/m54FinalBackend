@@ -8,7 +8,7 @@ const Post = require("./Post");
 const Comment = require("./Comment");
 const GroupUser = require("./GroupUser");
 const EventUser = require("./EventUser");
-const Friendship = require("./Friendship");
+const Follow = require("./Follow");
 
 // User and Group are independent, with GroupUser as a through table
 User.belongsToMany(Group, { through: GroupUser });
@@ -46,8 +46,18 @@ Comment.belongsTo(User);
 Post.hasMany(Comment);
 Comment.belongsTo(Post);
 
-// User has many friends through Friendship
-User.belongsToMany(User, { as: "Friends", through: Friendship, foreignKey: "userId", otherKey: "friendId" });
+User.belongsToMany(User, {
+  as: "Followers",
+  through: Follow,
+  foreignKey: "FollowingId",
+  otherKey: "UserId",
+});
+User.belongsToMany(User, {
+  as: "Following",
+  through: Follow,
+  foreignKey: "UserId",
+  otherKey: "FollowingId",
+});
 
 // Export the models
 module.exports = {
@@ -58,5 +68,5 @@ module.exports = {
   EventUser,
   Post,
   Comment,
-  Friendship,
+  Follow,
 };

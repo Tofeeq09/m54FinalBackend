@@ -9,6 +9,7 @@ const {
   getEvent,
   updateEvent,
   deleteEvent,
+  checkGroupMembershipFromEvent,
 } = require("../controllers/eventController");
 const { tokenCheck } = require("../middleware/verify");
 const {
@@ -23,6 +24,7 @@ router.post("/group/:groupId", tokenCheck, groupCheck, createEvent);
 
 router.get("/", getAllEvents);
 router.get("/:eventId", getEvent);
+router.get("/member/:eventId", tokenCheck, checkGroupMembershipFromEvent);
 
 router.put("/:eventId", tokenCheck, organizerCheck, updateEvent);
 

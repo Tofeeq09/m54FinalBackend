@@ -29,7 +29,9 @@ const postSchema = Joi.object({
 const putSchema = Joi.object({
   name: Joi.string().required(),
   description: Joi.string().allow(""),
-  topics: Joi.array().items(Joi.string().valid("topic1", "topic2", "topic3", "topic4", "topic5")).allow(""),
+  topics: Joi.array()
+    .items(Joi.string().valid("topic1", "topic2", "topic3", "topic4", "topic5"))
+    .allow(""),
   privacy_settings: Joi.string().allow(""),
 }).unknown(true);
 
@@ -46,7 +48,10 @@ module.exports = {
       if (err) {
         let errorMessage = err.details[0].message;
         errorMessage = errorMessage.replace(/\"/g, "");
-        throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
+        throw new ValidationError(
+          `Validation failed: ${errorMessage}`,
+          "signup"
+        );
       }
 
       // Extract the required fields from the request body
@@ -55,7 +60,10 @@ module.exports = {
       // Check if the group already exists
       const existingGroup = await Group.findOne({ where: { name } });
       if (existingGroup) {
-        throw new ValidationError("Validation failed: Group already exists", "createGroup");
+        throw new ValidationError(
+          "Validation failed: Group already exists",
+          "createGroup"
+        );
       }
 
       // Start a new transaction
@@ -84,7 +92,11 @@ module.exports = {
           // Add the user who created the group as an admin
           const user = await User.findByPk(req.authCheck.id);
           if (user) {
-            await group.addUser(user, { through: { role: "admin" } }, { transaction });
+            await group.addUser(
+              user,
+              { through: { role: "admin" } },
+              { transaction }
+            );
           }
 
           // Commit the transaction
@@ -102,7 +114,9 @@ module.exports = {
       }
 
       // Send response to client
-      res.status(201).json({ success: true, message: "Group created successfully", group });
+      res
+        .status(201)
+        .json({ success: true, message: "Group created successfully", group });
       return;
     } catch (err) {
       if (err instanceof ValidationError || err instanceof DatabaseError) {
@@ -142,7 +156,13 @@ module.exports = {
         throw new DatabaseError(err.message, "getAllGroups");
       }
 
-      // If no groups found
+      // If no groups found and filters were applied, return an empty array
+      if (!groups && (topics.length > 0 || groupName)) {
+        res.status(200).json({ success: true, count: 0, groups: [] });
+        return;
+      }
+
+      // If no groups found and no filters were applied, throw an error
       if (!groups) {
         throw new NotFoundError("No groups found", "getAllGroups");
       }
@@ -155,12 +175,14 @@ module.exports = {
         })
       );
 
-      if (result.length === 0) {
-        throw new NotFoundError("No groups found", "getAllGroups");
-      }
+      // if (result.length === 0) {
+      //   throw new NotFoundError("No groups found", "getAllGroups");
+      // }
 
       // Send response to client
-      res.status(200).json({ success: true, count: result.length, groups: result });
+      res
+        .status(200)
+        .json({ success: true, count: result.length, groups: result });
       return;
     } catch (err) {
       if (err instanceof DatabaseError) {
@@ -259,7 +281,9 @@ module.exports = {
         return eventJSON;
       });
 
-      res.status(200).json({ success: true, count, events: eventsWithAttendeeCount });
+      res
+        .status(200)
+        .json({ success: true, count, events: eventsWithAttendeeCount });
     } catch (err) {
       if (err instanceof NotFoundError) {
         next(err);
@@ -281,7 +305,10 @@ module.exports = {
       if (err) {
         let errorMessage = err.details[0].message;
         errorMessage = errorMessage.replace(/\"/g, "");
-        throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
+        throw new ValidationError(
+          `Validation failed: ${errorMessage}`,
+          "signup"
+        );
       }
 
       // Update group
@@ -290,7 +317,10 @@ module.exports = {
         group = await req.group.update(value);
       } catch (err) {
         if (err.name === "SequelizeUniqueConstraintError") {
-          throw new ValidationError("Group name is already in use", "updateGroup");
+          throw new ValidationError(
+            "Group name is already in use",
+            "updateGroup"
+          );
         }
         throw new DatabaseError(err.message, "updateGroup");
       }
@@ -328,7 +358,10 @@ module.exports = {
       }
 
       // Send response to client
-      res.status(200).json({ success: true, message: `Group ${req.group.name} disbanded successfully` });
+      res.status(200).json({
+        success: true,
+        message: `Group ${req.group.name} disbanded successfully`,
+      });
     } catch (err) {
       if (err instanceof DatabaseError || err instanceof ForbiddenError) {
         next(err);
@@ -348,11 +381,16 @@ module.exports = {
       const { groupId, userId } = req.params;
 
       // Remove user from group
-      const result = await GroupUser.destroy({ where: { GroupId: groupId, UserId: userId } });
+      const result = await GroupUser.destroy({
+        where: { GroupId: groupId, UserId: userId },
+      });
 
       // If user not in group
       if (!result) {
-        throw new NotFoundError("User not found in group", "removeUserFromGroup");
+        throw new NotFoundError(
+          "User not found in group",
+          "removeUserFromGroup"
+        );
       }
 
       // Send response to client

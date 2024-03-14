@@ -13,7 +13,7 @@ const {
   groupRoutes,
   eventRoutes,
   postRoutes,
-  friendRoutes,
+  followRoutes,
 } = require("./routes");
 const models = require("./models");
 
@@ -40,7 +40,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/posts", postRoutes);
-app.use("/api/friends", friendRoutes);
+app.use("/api/follow", followRoutes);
+
 
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "API is live" });
@@ -53,7 +54,7 @@ app.get("/api/validTopics", (req, res) => {
     "Comics/Manga",
     "Movies & TV",
     "Coding",
-    "TTRPG",
+    "Sports",
   ];
   res.json(validTopics);
 });
