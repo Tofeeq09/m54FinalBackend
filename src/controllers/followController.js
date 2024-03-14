@@ -108,17 +108,42 @@ module.exports = {
         attributes: ["id", "username", "avatar"],
       });
       const followersCount = followers.length;
-      console.log(`Followers of user ${req.params.userId}:`, followers);
 
       const following = await user.getFollowing({
         attributes: ["id", "username", "avatar"],
       });
       const followingCount = following.length;
-      console.log(`Following of user ${req.params.userId}:`, following);
 
       res
         .status(200)
         .send({ followers, followersCount, following, followingCount });
+    } catch (err) {
+      console.error(err);
+      next(err);
+    }
+  },
+
+  isFollowing: async (req, res, next) => {
+    try {
+      if (!req.authCheck) {
+        throw new UnauthorizedError("User not authenticated");
+      }
+
+      const userId = req.authCheck.id;
+      const followingId = req.params.userId;
+
+      const follow = await Follow.findOne({
+        where: {
+          UserId: userId,
+          FollowingId: followingId,
+        },
+      });
+
+      if (follow) {
+        res.status(200).send({ isFollowing: true });
+      } else {
+        res.status(200).send({ isFollowing: false });
+      }
     } catch (err) {
       console.error(err);
       next(err);

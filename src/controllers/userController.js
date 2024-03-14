@@ -724,7 +724,24 @@ module.exports = {
               },
             ],
           },
-          { model: Post },
+          {
+            model: Post,
+            attributes: ["id", "content", "createdAt", "updatedAt"], // Specify the attributes you want to fetch
+            include: [
+              {
+                model: Group,
+                attributes: ["id", "name"],
+              },
+              {
+                model: Event,
+                attributes: ["id", "name"],
+              },
+              {
+                model: User,
+                attributes: ["id", "username", "avatar"],
+              },
+            ],
+          },
         ],
       });
 
