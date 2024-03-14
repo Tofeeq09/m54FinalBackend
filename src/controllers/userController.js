@@ -317,8 +317,10 @@ module.exports = {
         return rest;
       });
 
-      if (result.count === 0) {
-        throw new NotFoundError("No users found", "getAllUsers");
+      // If no users found and filters were applied, return an empty array
+      if (result.count === 0 && username) {
+        res.status(200).json({ success: true, count: 0, users: [] });
+        return;
       }
 
       // Send the response to the client

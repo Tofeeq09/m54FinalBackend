@@ -21,11 +21,11 @@ const {
 const { GroupUser, Group, EventUser, Event } = require("../models");
 
 const userUpdateSchema = Joi.object({
-  username: Joi.string().optional(),
-  email: Joi.string().email().optional(),
-  password: Joi.string().min(6).optional(),
-  avatar: Joi.string().optional(),
-}).unknown(true);
+  username: Joi.string(),
+  email: Joi.string().email(),
+  avatar: Joi.string(),
+  password: Joi.string().optional(),
+});
 
 // Define the auth middleware
 
@@ -37,7 +37,10 @@ module.exports = {
 
       // Check if password is provided
       if (!password) {
-        throw new ValidationError("Validation failed: password is required", "hashPassword");
+        throw new ValidationError(
+          "Validation failed: password is required",
+          "hashPassword"
+        );
       }
 
       // Hash the password
@@ -68,12 +71,18 @@ module.exports = {
 
       // Check if username or email is provided
       if (!username && !email) {
-        throw new ValidationError("Validation failed: Username or Email is required", "validate");
+        throw new ValidationError(
+          "Validation failed: Username or Email is required",
+          "validate"
+        );
       }
 
       // Check if password is provided
       if (!password) {
-        throw new ValidationError("Validation failed: Password is required", "validate");
+        throw new ValidationError(
+          "Validation failed: Password is required",
+          "validate"
+        );
       }
 
       next();
@@ -126,7 +135,10 @@ module.exports = {
       if (error) {
         let errorMessage = error.details[0].message;
         errorMessage = errorMessage.replace(/\"/g, "");
-        throw new ValidationError(`Validation failed: ${errorMessage}`, "signup");
+        throw new ValidationError(
+          `Validation failed: ${errorMessage}`,
+          "compareAndUpdateUser"
+        );
       }
 
       // If user is authenticated do this...
@@ -166,10 +178,16 @@ module.exports = {
             if (err.name === "SequelizeUniqueConstraintError") {
               const fields = err.errors.map((error) => error.path);
               if (fields.includes("username")) {
-                throw new ValidationError("Username is already in use", "compareAndUpdateUser");
+                throw new ValidationError(
+                  "Username is already in use",
+                  "compareAndUpdateUser"
+                );
               }
               if (fields.includes("email")) {
-                throw new ValidationError("Email is already in use", "compareAndUpdateUser");
+                throw new ValidationError(
+                  "Email is already in use",
+                  "compareAndUpdateUser"
+                );
               }
             }
             throw new DatabaseError(err.message, "compareAndUpdateUser");
@@ -182,7 +200,11 @@ module.exports = {
       // If user is not authenticated do this...
       next();
     } catch (err) {
-      if (err instanceof ValidationError || err instanceof BcryptError || err instanceof DatabaseError) {
+      if (
+        err instanceof ValidationError ||
+        err instanceof BcryptError ||
+        err instanceof DatabaseError
+      ) {
         next(err);
         return;
       }
@@ -216,12 +238,19 @@ module.exports = {
 
       // Check if password is incorrect
       if (!isMatch) {
-        throw new UnauthorizedError("The password you entered is incorrect. Please try again.", "comparePass");
+        throw new UnauthorizedError(
+          "The password you entered is incorrect. Please try again.",
+          "comparePass"
+        );
       }
 
       next();
     } catch (error) {
-      if (error instanceof BcryptError || error instanceof UnauthorizedError || error instanceof ValidationError) {
+      if (
+        error instanceof BcryptError ||
+        error instanceof UnauthorizedError ||
+        error instanceof ValidationError
+      ) {
         next(error);
         return;
       }
@@ -250,7 +279,10 @@ module.exports = {
 
       // Check if user is in group
       if (!groupUser) {
-        throw new NotFoundError("Group not found or user not in group", "adminCheck");
+        throw new NotFoundError(
+          "Group not found or user not in group",
+          "adminCheck"
+        );
       }
 
       // Attach sequelize group object to req object & set isAdmin to true
@@ -258,7 +290,11 @@ module.exports = {
       req.isAdmin = true;
       next();
     } catch (error) {
-      if (error instanceof ForbiddenError || error instanceof NotFoundError || error instanceof DatabaseError) {
+      if (
+        error instanceof ForbiddenError ||
+        error instanceof NotFoundError ||
+        error instanceof DatabaseError
+      ) {
         next(error);
         return;
       }
@@ -304,7 +340,10 @@ module.exports = {
 
       // Check if event is organized or user is an attendee
       if (!eventUser) {
-        throw new NotFoundError("Event not found or user not an organizer", "organizerCheck");
+        throw new NotFoundError(
+          "Event not found or user not an organizer",
+          "organizerCheck"
+        );
       }
 
       // Check if user is an organizer
@@ -318,7 +357,11 @@ module.exports = {
 
       next();
     } catch (error) {
-      if (error instanceof ForbiddenError || error instanceof NotFoundError || error instanceof DatabaseError) {
+      if (
+        error instanceof ForbiddenError ||
+        error instanceof NotFoundError ||
+        error instanceof DatabaseError
+      ) {
         next(error);
         return;
       }

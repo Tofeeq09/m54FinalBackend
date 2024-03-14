@@ -29,22 +29,23 @@ const { tokenCheck } = require("../middleware/verify");
 
 // Define the user routes
 
+// User related routes
 router.post("/", hashPassword, signup);
 router.post("/login", validate, findUser, comparePassword, login);
-
+router.put("/logout", tokenCheck, logout);
 router.get("/", getAllUsers);
 router.get("/verify", tokenCheck, login);
 router.get("/username/:username", getUserDetailsByUsername);
 router.get("/private", tokenCheck, getUserEmail);
-
-router.put("/logout", tokenCheck, logout);
 router.put("/", tokenCheck, compareAndUpdateUser, sendUpdatedUser);
 router.delete("/", tokenCheck, comparePassword, deleteUser);
 
+// Group related routes
 router.get("/:userId/groups", getUserGroups);
 router.post("/group/:groupId", tokenCheck, joinGroup);
 router.delete("/group/:groupId", tokenCheck, leaveGroup);
 
+// Event related routes
 router.get("/:userId/events", getUserEvents);
 router.post("/event/:eventId", tokenCheck, attendEvent);
 router.delete("/event/:eventId", tokenCheck, cancelEventAttendance);
