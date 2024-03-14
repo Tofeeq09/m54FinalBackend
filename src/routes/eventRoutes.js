@@ -2,6 +2,7 @@
 
 // Import the required modules
 const router = require("express").Router();
+
 const {
   createEvent,
   getAllEvents,
