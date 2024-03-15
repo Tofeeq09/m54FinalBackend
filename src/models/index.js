@@ -46,6 +46,7 @@ Comment.belongsTo(User);
 Post.hasMany(Comment);
 Comment.belongsTo(Post);
 
+// Associations for Follow
 User.belongsToMany(User, {
   as: "Followers",
   through: Follow,

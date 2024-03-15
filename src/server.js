@@ -42,20 +42,13 @@ app.use("/api/events", eventRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/follow", followRoutes);
 
-
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "API is live" });
   return;
 });
 
 app.get("/api/validTopics", (req, res) => {
-  const validTopics = [
-    "Gaming",
-    "Comics/Manga",
-    "Movies & TV",
-    "Coding",
-    "Sports",
-  ];
+  const validTopics = ["Gaming", "Comics/Manga", "Media", "Coding", "Sports"];
   res.json(validTopics);
 });
 

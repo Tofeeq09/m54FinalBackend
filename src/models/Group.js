@@ -27,14 +27,14 @@ const Group = sequelize.define("Group", {
         const validTopics = [
           "Gaming",
           "Comics/Manga",
-          "Movies & TV",
+          "Media",
           "Coding",
           "Sports",
         ];
         for (let topic of value) {
           if (!validTopics.includes(topic)) {
             throw new Error(
-              `Topics must be one of: "Gaming", "Comics/Manga", "Movies & TV", "Coding", "Sports"`
+              `Topics must be one of: "Gaming", "Comics/Manga", "Media", "Coding", "Sports"`
             );
           }
         }

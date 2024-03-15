@@ -30,7 +30,7 @@ router.put("/:eventId", tokenCheck, organizerCheck, updateEvent);
 
 router.delete("/:eventId", tokenCheck, organizerCheck, deleteEvent);
 router.delete(
-  "/groups/:groupId/event/:eventId",
+  "/group/:groupId/event/:eventId",
   tokenCheck,
   adminCheck,
   deleteEvent
